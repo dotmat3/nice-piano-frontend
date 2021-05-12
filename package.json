@@ -1,7 +1,7 @@
 {
-  "name": "nice-piano",
-  "version": "1.0.0",
-  "description": "A nice piano app",
+  "name": "nice-piano-frontend",
+  "version": "0.0.1",
+  "description": "A nice piano frontend",
   "private": true,
   "keywords": [
     "piano",
