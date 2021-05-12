@@ -1,0 +1,90 @@
+.piano {
+  font-size: 12px;
+  font-weight: 400;
+  display: flex;
+  padding: 18px 32px;
+  border-radius: 8px 8px 12px 12px;
+  background: var(--keyboard);
+  width: calc(100% - 100px);
+  margin: 60px 50px;
+  margin-top: 0;
+  box-shadow: 5px 5px 0 var(--keyboard-shadow);
+}
+
+.piano-octave {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: var(--keyboard-white-height);
+  display: block;
+  position: relative;
+}
+
+.piano-octave-white,
+.piano-octave-black {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  position: absolute;
+  align-items: baseline;
+}
+
+.piano-octave-black {
+  height: var(--keyboard-black-height);
+}
+
+.piano button {
+  outline: none;
+  transition: all 100ms ease-out;
+  margin: 0px;
+  padding: 0px;
+  color: var(--keyboard-label);
+  border-radius: 0px 0px 4px 4px;
+  border: 1px solid var(--keyboard);
+}
+
+.piano button.white {
+  background: var(--keyboard-white);
+  width: 100%;
+  height: 100%;
+  box-shadow: inset var(--keyboard-white-shade) 0 -10px 0 0;
+  padding-top: 80px;
+}
+
+.piano button.white:active,
+.piano button.white.active {
+  background: var(--keyboard-white-pressed);
+  box-shadow: inset var(--keyboard-white-shade) 0 -2px 0 0;
+  transform: translate(0, 4px);
+  height: calc(var(--keyboard-white-height) - 8px);
+}
+
+.piano button.black {
+  border: 2px solid var(--keyboard-mode);
+  background: var(--keyboard-black);
+  flex-grow: 1;
+  height: var(--keyboard-black-height);
+  z-index: 99;
+  transform: translateY(-10px);
+  box-shadow: inset var(--keyboard-black-shade) 0 -10px 0 0;
+  margin: 0 1px;
+}
+
+.piano button.black.half {
+  flex-grow: 0.5;
+}
+
+.piano button.black.hidden {
+  visibility: hidden;
+}
+
+.piano button.black:active,
+.piano button.black.active {
+  background: var(--keyboard-black-pressed);
+  height: calc(var(--keyboard-black-height) - 8px);
+
+  box-shadow: inset var(--keyboard-black-shade) 0 -2px 0 0;
+}

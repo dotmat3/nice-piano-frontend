@@ -1,0 +1,72 @@
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Open Sans", sans-serif;
+}
+
+:root {
+  --button-color: #383838;
+  --rec-button-color: #eb3939;
+  --text-color: #383838;
+  --background: #f0f0f0;
+
+  --waterfall: #cecece;
+
+  --keyboard: #9b080e;
+  --keyboard-shadow: #630508;
+
+  --keyboard-white: #f7fff7;
+  --keyboard-white-shade: #d9dfd9;
+  --keyboard-white-pressed: #d3d3d3;
+  --keyboard-black: #292929;
+  --keyboard-black-shade: #181818;
+  --keyboard-black-pressed: #111111;
+  --keyboard-label: rgba(--keyboard-black, 0.5);
+
+  --keyboard-white-height: 120px;
+  --keyboard-black-height: 80px;
+}
+
+html,
+body,
+#root,
+.App {
+  width: 100%;
+  height: 100%;
+}
+
+.App {
+  font-family: sans-serif;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background);
+  padding: 4px;
+
+  &.recording {
+    padding: 0;
+    border: 4px solid var(--rec-button-color);
+  }
+}
+
+header {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+
+  p {
+    padding: 0 26px;
+    font-size: 24px;
+    color: var(--text-color);
+
+    &.latency {
+      font-size: 14px;
+    }
+  }
+}
