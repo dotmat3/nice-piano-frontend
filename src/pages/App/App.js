@@ -1,127 +1,162 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useReducer } from "react";
 
-import SoundfontPlayer from "soundfont-player";
 import socketio from "socket.io-client";
+import SoundfontPlayer from "soundfont-player";
 
 import Piano from "../../components/Piano";
 import PianoWaterfall from "../../components/PianoWaterfall";
 import MenuBar from "../../components/MenuBar";
 
-import { formatTime, parseMidiMessage } from "../../utils";
+import {
+  formatTime,
+  parseMidiMessage,
+  getNoteFromMidiNumber,
+} from "../../utils";
 
 import "./App.scss";
+import {
+  combineReducers,
+  instrumentReducer,
+  noteReducer,
+  webSocketReducer,
+  metricsReducer,
+  midiReducer,
+  recordingReducer,
+  setRecordingTimer,
+  uiReducer,
+  startPlayingRecording,
+  stopPlayingRecording,
+} from "../../reducers";
+import {
+  addNote,
+  removeNote,
+  setSocket,
+  setInstrument,
+  setInstrumentsList,
+  setLatency,
+  setMidiAccess,
+  setMidiInput,
+  setMidiOutput,
+  setTransposition,
+  setVolume,
+  removeDrawedNote,
+  toggleLooping,
+  startRecording,
+  stopRecording,
+  setMessage,
+} from "../../reducers";
+import { AUDIO_CONTEXT } from "../../constants";
 
-const ac = new AudioContext();
 const DEFAULT_INSTRUMENT = "acoustic_grand_piano";
 const INSTRUMENTS_PATH =
   "https://raw.githubusercontent.com/danigb/soundfont-player/master/names/musyngkite.json";
-const SUSTAIN_DELAY = 1000;
+
+const REDUCERS = [
+  noteReducer,
+  instrumentReducer,
+  webSocketReducer,
+  metricsReducer,
+  midiReducer,
+  recordingReducer,
+  uiReducer,
+];
+const INITIAL_STATE = {
+  socket: null,
+  instrument: null,
+  instrumentName: "",
+  instrumentsList: [],
+  activeNotes: {},
+  drawedNotes: {},
+
+  volume: 1,
+
+  transposition: 0,
+
+  midiAccess: null,
+  currentInput: "none",
+  currentOutput: "none",
+
+  message: "🎵 Play some notes...",
+
+  isPlayingRecording: false,
+  isRecording: false,
+  startRecordingTime: null,
+  endRecordingTime: null,
+  looping: false,
+  recordingTimer: null,
+  track: [],
+
+  latency: null,
+};
+
+const connect = () =>
+  new Promise((resolve) => {
+    const address = process.env.REACT_APP_SOCKET_ADDRESS;
+    const socket = socketio.connect(address, { transports: ["websocket"] });
+    socket.once("connect", () => resolve(socket));
+  });
+
+const changeInstrument = async (name) => {
+  console.debug("Creating virtual instrument...", name);
+  const options = { from: "MusyngKite" };
+  const instrument = await SoundfontPlayer.instrument(
+    AUDIO_CONTEXT,
+    name,
+    options
+  );
+  console.debug("Created virtual instrument");
+  return instrument;
+};
 
 const App = () => {
-  const [socket, setSocket] = useState(null);
-  const [instrument, setInstrument] = useState(null);
-  const [instrumentName, setInstrumentName] = useState("");
-  const [instrumentsList, setInstrumentsList] = useState([]);
-  const [activeNotes, setActiveNotes] = useState({});
+  const [state, dispatch] = useReducer(
+    combineReducers(REDUCERS),
+    INITIAL_STATE
+  );
 
-  // Volume
-  const [volume, setVolume] = useState(1);
+  const playNote = useCallback(
+    (pitch, velocity, emitEvent) => {
+      const note = state.instrument.play(pitch, AUDIO_CONTEXT.currentTime, {
+        gain: velocity,
+        sustain: state.volume,
+        loop: 1,
+      });
+      const noteStr = getNoteFromMidiNumber(pitch);
+      const color = emitEvent
+        ? noteStr.includes("b")
+          ? "#06f"
+          : "#09f"
+        : noteStr.includes("b")
+        ? "#ba8900"
+        : "#fcba03";
+      dispatch(addNote(note, pitch, velocity, color));
+      if (emitEvent) state.socket.emit("note_on", { pitch, velocity });
+    },
+    [state.socket, state.instrument, state.volume]
+  );
 
-  // Sustain
-  const [sustain, setSustain] = useState(false);
+  const stopNote = useCallback(
+    (pitch, emitEvent) => {
+      dispatch(removeNote(pitch));
+      if (emitEvent) state.socket.emit("note_off", { pitch });
+    },
+    [state.socket]
+  );
 
-  // Transpose
-  const [transposition, setTransposition] = useState(0);
-
-  // Midi Input/Output
-  const [midiAccess, setMidiAccess] = useState(null);
-  const [currentInput, setCurrentInput] = useState("none");
-  const [currentOutput, setCurrentOutput] = useState("none");
-
-  const [message, setMessage] = useState("🎵 Play some notes...");
-
-  // Recording
-  const [isPlayingRecording, setIsPlayingRecording] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [startRecordingTime, setStartRecordingTime] = useState(null);
-  const [endRecordingTime, setEndRecordingTime] = useState(null);
-  const [looping, setLooping] = useState(false);
-  const [recordingTimer, setRecordingTimer] = useState(null);
-  const [track, setTrack] = useState([]);
-
-  // Metrics
-  const [latency, setLatency] = useState(null);
-
+  /* RECORDING TIMER */
   const startTimer = (startTime) => {
     const interval = setInterval(() => {
       const date = new Date(Date.now() - startTime);
-      setMessage(formatTime(date));
+      dispatch(setMessage(formatTime(date)));
     }, 1000);
-    setRecordingTimer(interval);
-
+    dispatch(setRecordingTimer(interval));
     return interval;
   };
 
-  const onPlayNote = useCallback(
-    (pitch, velocity, emitEvent) => {
-      if (velocity === null || velocity === undefined) velocity = 1;
-
-      const note = instrument.play(pitch, ac.currentTime, {
-        gain: velocity,
-        sustain: volume,
-        loop: 1,
-      });
-      setActiveNotes((prev) => {
-        return { ...prev, [pitch.toString()]: note };
-      });
-
-      if (isRecording) {
-        if (track.length === 0) {
-          const startTime = Date.now();
-          setStartRecordingTime(startTime);
-          startTimer(startTime);
-          setTrack((prev) => [
-            ...prev,
-            { type: "note_on", pitch, velocity, time: 0 },
-          ]);
-        } else {
-          const delta = Date.now() - startRecordingTime;
-          setTrack((prev) => [
-            ...prev,
-            { type: "note_on", pitch, velocity, time: delta },
-          ]);
-        }
-      }
-
-      if (emitEvent) socket.emit("note_on", { pitch, velocity });
-    },
-    [socket, volume, isRecording, startRecordingTime, instrument, track]
-  );
-
-  const onStopNote = useCallback(
-    (pitch, emitEvent) => {
-      if (emitEvent) socket.emit("note_off", { pitch });
-
-      setActiveNotes((prev) => {
-        if (pitch in prev) {
-          const note = prev[pitch];
-          if (sustain) setTimeout(() => note.stop(), SUSTAIN_DELAY * volume);
-          else note.stop();
-          delete prev[pitch];
-        }
-        return { ...prev };
-      });
-
-      if (isRecording) {
-        const delta = Date.now() - startRecordingTime;
-        setTrack((prev) => [
-          ...prev,
-          { type: "note_off", pitch, velocity: 0, time: delta },
-        ]);
-      }
-    },
-    [socket, isRecording, startRecordingTime]
-  );
+  useEffect(() => {
+    if (state.isRecording && state.track && state.track.length == 1)
+      startTimer(Date.now());
+  }, [state.isRecording, state.track]);
 
   const handleMidiMessage = useCallback(
     (msg) => {
@@ -129,50 +164,39 @@ const App = () => {
 
       if (command !== 9 && command !== 8) return;
 
-      const transposedPitch = pitch + transposition * 12;
+      const transposedPitch = pitch + state.transposition * 12;
 
-      if (command === 8 || velocity === 0) onStopNote(transposedPitch, true);
-      else if (command === 9) onPlayNote(transposedPitch, velocity, true);
+      if (command === 8 || velocity === 0) stopNote(transposedPitch, true);
+      else if (command === 9) playNote(transposedPitch, velocity, true);
     },
-    [transposition, onPlayNote, onStopNote]
+    [state.transposition, playNote, stopNote]
   );
 
   const onStartRecording = () => {
     console.debug("Recording started...");
-    setTrack([]);
-    setStartRecordingTime(null);
-    setEndRecordingTime(null);
-    setMessage("00:00:00");
-    setIsRecording(true);
+    dispatch(startRecording());
   };
 
   const onStopRecording = () => {
-    console.debug("Recording ended...", track);
-    setIsRecording(false);
-    setEndRecordingTime(Date.now());
-    clearInterval(recordingTimer);
-    setRecordingTimer(null);
-    setMessage("🎵 Play some notes...");
+    console.debug("Recording ended...");
+    dispatch(stopRecording());
   };
 
   const onPlayRecording = useCallback(() => {
+    const { track, startRecordingTime, endRecordingTime, looping } = state;
     console.debug("Playing recording...", track);
-    setIsPlayingRecording(true);
 
+    dispatch(startPlayingRecording());
     const beginTime = Date.now();
     const timer = startTimer(beginTime);
-
     const lastEvent = track[track.length - 1];
-
     for (const event of track) {
       const now = Date.now();
       const { type, pitch, velocity, time } = event;
-
       const timeout = beginTime + time - now;
-
       setTimeout(() => {
-        if (type === "note_on") onPlayNote(pitch, velocity, true);
-        else onStopNote(pitch, true);
+        if (type === "note_on") playNote(pitch, velocity, true);
+        else stopNote(pitch, true);
 
         // Is the last event
         if (event === lastEvent) {
@@ -180,95 +204,83 @@ const App = () => {
           const durationUntilLastEvent = Date.now() - beginTime;
           setTimeout(() => {
             clearInterval(timer);
+            dispatch(setRecordingTimer(null));
 
             // Handle loop or stop
             if (looping) onPlayRecording();
             else {
-              setMessage("🎵 Play some notes...");
-              setIsPlayingRecording(false);
+              dispatch(setMessage("🎵 Play some notes..."));
+              dispatch(stopPlayingRecording());
             }
           }, recordingDuration - durationUntilLastEvent);
         }
       }, timeout);
     }
   }, [
-    track,
-    looping,
-    endRecordingTime,
-    startRecordingTime,
-    onPlayNote,
-    onStopNote,
+    state.track,
+    state.startPlayingRecording,
+    state.endRecordingTime,
+    state.looping,
   ]);
 
   const onResetRecording = () => {
     console.debug("Stopping recoring...");
-    setMessage("Stopping recording...");
-    setIsPlayingRecording(false);
-  };
-
-  const changeInstrument = async (name) => {
-    console.debug("Creating virtual instrument...", name);
-    const options = { from: "MusyngKite" };
-    const instrument = await SoundfontPlayer.instrument(ac, name, options);
-    console.debug("Created virtual instrument");
-    setInstrumentName(name);
-    setInstrument(instrument);
+    dispatch(setMessage("Stopping recording..."));
+    dispatch(stopPlayingRecording());
   };
 
   useEffect(() => {
     console.debug("Creating socket...");
-    const address = "wss://151.15.81.174:5000";
-    const socket = socketio.connect(address, { transports: ["websocket"] });
-    setSocket(socket);
-    console.debug("Connecting...");
-
-    socket.on("connect", async () => {
+    connect().then(async (socket) => {
       console.debug("Connected");
+      dispatch(setSocket(socket));
+
+      socket.on("ping", () => socket.emit("pong"));
+      socket.on("latency", (value) => dispatch(setLatency(value)));
 
       console.debug("Getting instruments list...");
       const response = await fetch(INSTRUMENTS_PATH);
       const data = await response.json();
-      setInstrumentsList(data);
+      dispatch(setInstrumentsList(data));
       console.debug("Done");
 
       // Set initial instrument
-      await changeInstrument(DEFAULT_INSTRUMENT);
+      const instrument = await changeInstrument(DEFAULT_INSTRUMENT);
+      dispatch(setInstrument(DEFAULT_INSTRUMENT, instrument));
 
       const access = await navigator.requestMIDIAccess();
-      setMidiAccess(access);
+      dispatch(setMidiAccess(access));
 
       // Set initial MIDI input
       const inputs = Array.from(access.inputs.values());
-      if (inputs.length > 0) setCurrentInput(inputs[0].id);
+      if (inputs.length > 0) dispatch(setMidiInput(inputs[0].id));
     });
-
-    socket.on("ping", () => socket.emit("pong"));
-    socket.on("latency", setLatency);
   }, []);
 
   useEffect(() => {
-    if (!socket || !instrument) return;
+    if (!state.socket) return;
 
-    const handleNoteOn = (data) => onPlayNote(data.pitch, data.velocity);
-    const handleNoteOff = (data) => onStopNote(data.pitch);
+    const handlePlayNote = ({ pitch, velocity }) =>
+      playNote(pitch, velocity, false);
+    const handleStopNote = ({ pitch }) => stopNote(pitch, false);
 
-    socket.on("note_on", handleNoteOn);
-    socket.on("note_off", handleNoteOff);
+    state.socket.on("note_on", handlePlayNote);
+    state.socket.on("note_off", handleStopNote);
 
     return () => {
-      socket.off("note_on", handleNoteOn);
-      socket.off("note_off", handleNoteOff);
+      state.socket.off("note_on", handlePlayNote);
+      state.socket.off("note_off", handleStopNote);
     };
-  }, [socket, instrument, isRecording]);
+  }, [state.socket, playNote, stopNote]);
 
   useEffect(() => {
+    const { currentInput, currentOutput, midiAccess } = state;
     if (!midiAccess || !currentInput) return;
 
     console.debug("Updating input-output devices", currentInput, currentOutput);
 
     // Clear callbacks for all devices
-    for (let input of midiAccess.inputs.values())
-      input.onmidimessage = () => {};
+    for (let input of midiAccess.inputs.values()) input.onmidimessage = null;
 
     // Search output device
     let outputDevice = null;
@@ -286,30 +298,34 @@ const App = () => {
         };
 
     return () => {
-      for (let input of midiAccess.inputs.values())
-        input.onmidimessage = () => {};
+      for (let input of midiAccess.inputs.values()) input.onmidimessage = null;
     };
-  }, [currentInput, currentOutput, midiAccess, handleMidiMessage]);
+  }, [
+    state.currentInput,
+    state.currentOutput,
+    state.midiAccess,
+    handleMidiMessage,
+  ]);
 
   return (
-    <div className={"App" + (isRecording ? " recording" : "")}>
+    <div className={"App" + (state.isRecording ? " recording" : "")}>
       <header>
         <div style={{ display: "flex" }}>
           <div>
-            <p className="message">{message}</p>
+            <p className="message">{state.message}</p>
             <p className="latency">
-              Loop: {looping ? "ON" : "OFF"} | Latency: {latency} ms
+              Loop: {state.looping ? "ON" : "OFF"} | Latency: {state.latency} ms
             </p>
           </div>
           <div>
             <div style={{ display: "flex", marginTop: "5px" }}>
               <p style={{ fontSize: "16px" }}>Midi input</p>
               <select
-                value={currentInput}
-                onChange={(e) => setCurrentInput(e.currentTarget.value)}
+                value={state.currentInput}
+                onChange={(e) => dispatch(setMidiInput(e.currentTarget.value))}
               >
-                {midiAccess &&
-                  Array.from(midiAccess.inputs.values()).map((device) => (
+                {state.midiAccess &&
+                  Array.from(state.midiAccess.inputs.values()).map((device) => (
                     <option key={device.id} value={device.id}>
                       {device.name}
                     </option>
@@ -320,25 +336,32 @@ const App = () => {
             <div style={{ display: "flex", marginTop: "5px" }}>
               <p style={{ fontSize: "16px" }}>Midi output</p>
               <select
-                value={currentOutput}
-                onChange={(e) => setCurrentOutput(e.currentTarget.value)}
+                value={state.currentOutput}
+                onChange={(e) => dispatch(setMidiOutput(e.currentTarget.value))}
               >
-                {midiAccess &&
-                  Array.from(midiAccess.outputs.values()).map((device) => (
-                    <option key={device.id} value={device.id}>
-                      {device.name}
-                    </option>
-                  ))}
+                {state.midiAccess &&
+                  Array.from(state.midiAccess.outputs.values()).map(
+                    (device) => (
+                      <option key={device.id} value={device.id}>
+                        {device.name}
+                      </option>
+                    )
+                  )}
                 <option value="none">None</option>
               </select>
             </div>
             <div style={{ display: "flex", marginTop: "5px" }}>
               <p style={{ fontSize: "16px" }}>Instrument</p>
               <select
-                value={instrumentName}
-                onChange={(e) => changeInstrument(e.currentTarget.value)}
+                value={state.instrumentName}
+                onChange={(e) => {
+                  const name = e.currentTarget.value;
+                  changeInstrument(name).then((instrument) =>
+                    dispatch(setInstrument(name, instrument))
+                  );
+                }}
               >
-                {instrumentsList.map((instr, index) => (
+                {state.instrumentsList.map((instr, index) => (
                   <option key={index} value={instr}>
                     {instr}
                   </option>
@@ -351,22 +374,10 @@ const App = () => {
               <p style={{ fontSize: "16px" }}>Transposition</p>
               <input
                 type="number"
-                value={transposition}
-                onChange={(e) => setTransposition(e.currentTarget.value)}
-              />
-            </div>
-            <div
-              style={{
-                display: "flex",
-                marginTop: "5px",
-                alignItems: "center",
-              }}
-            >
-              <p style={{ fontSize: "16px" }}>Sustain</p>
-              <input
-                type="checkbox"
-                value={sustain}
-                onChange={(e) => setSustain(e.currentTarget.value)}
+                value={state.transposition}
+                onChange={(e) =>
+                  dispatch(setTransposition(e.currentTarget.value))
+                }
               />
             </div>
             <div
@@ -379,28 +390,31 @@ const App = () => {
               <p style={{ fontSize: "16px" }}>Volume</p>
               <input
                 type="number"
-                value={volume}
-                onChange={(e) => setVolume(e.currentTarget.value)}
+                value={state.volume}
+                onChange={(e) => dispatch(setVolume(e.currentTarget.value))}
               />
             </div>
           </div>
         </div>
         <MenuBar
-          isRecording={isRecording}
-          isPlayingRecording={isPlayingRecording}
+          isRecording={state.isRecording}
+          isPlayingRecording={state.isPlayingRecording}
           onStartRecording={onStartRecording}
           onStopRecording={onStopRecording}
           onPlayRecording={onPlayRecording}
           onResetRecording={onResetRecording}
-          onLoop={() => setLooping(!looping)}
+          onLoop={() => dispatch(toggleLooping())}
         />
       </header>
-      <PianoWaterfall octaves={9} />
+      <PianoWaterfall
+        drawedNotes={state.drawedNotes}
+        removeNote={(id) => dispatch(removeDrawedNote(id))}
+      />
       <Piano
         octaves={9}
-        activeNotes={activeNotes}
-        onPlayNote={onPlayNote}
-        onStopNote={onStopNote}
+        activeNotes={state.activeNotes}
+        onPlayNote={(pitch, velocity) => playNote(pitch, velocity, true)}
+        onStopNote={(pitch) => stopNote(pitch, true)}
       />
     </div>
   );

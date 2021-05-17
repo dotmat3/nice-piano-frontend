@@ -1,4 +1,4 @@
-import { BASES } from "./constants";
+import { CHROMATIC, BASES } from "./constants";
 
 export const split = (str) =>
   /^([a-gA-G])(#{1,}|b{1,}|x{1,}|)(-?\d*)(\/\d+|)\s*(.*)\s*$/.exec(str);

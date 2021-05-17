@@ -22,3 +22,5 @@ export const BASES = {
   A: [3, -1],
   B: [5, -2],
 };
+
+export const AUDIO_CONTEXT = new AudioContext();
