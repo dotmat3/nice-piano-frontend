@@ -119,7 +119,7 @@ const App = () => {
       const note = state.instrument.play(pitch, AUDIO_CONTEXT.currentTime, {
         gain: velocity,
         sustain: state.volume,
-        loop: 1,
+        loop: state.instrumentName !== "acoustic_grand_piano",
       });
       const noteStr = getNoteFromMidiNumber(pitch);
       const color = emitEvent
@@ -132,7 +132,7 @@ const App = () => {
       dispatch(addNote(note, pitch, velocity, color));
       if (emitEvent) state.socket.emit("note_on", { pitch, velocity });
     },
-    [state.socket, state.instrument, state.volume]
+    [state.socket, state.instrument, state.instrumentName, state.volume]
   );
 
   const stopNote = useCallback(
