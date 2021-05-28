@@ -35,7 +35,7 @@ const PianoWaterfall = ({ drawedNotes, removeNote }) => {
 
     ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
 
-    for (const [id, note] of Object.entries(drawedNotes)) {
+    for (const [index, note] of Object.entries(drawedNotes)) {
       // pitch : 107 = x : offsetWidth
       const noteStr = getNoteFromMidiNumber(note.pitch);
       let pitch = parseInt(noteStr.substr(noteStr.length - 1, 1)) * 7;
@@ -55,7 +55,7 @@ const PianoWaterfall = ({ drawedNotes, removeNote }) => {
 
       let height = end_y - y;
 
-      if (y + height < 0) removeNote(id);
+      if (y + height < 0) removeNote(index);
 
       drawNote(
         ctx,
@@ -70,7 +70,7 @@ const PianoWaterfall = ({ drawedNotes, removeNote }) => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      window.requestAnimationFrame(draw);
+      draw();
     }, 10);
 
     return () => clearInterval(interval);

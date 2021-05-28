@@ -1,10 +1,12 @@
+import { getNoteFromMidiNumber } from "../utils";
+
 export const ON_NOTE_PRESSED = "onnotepressed";
 export const ON_NOTE_RELEASED = "onnotereleased";
 export const REMOVE_DRAWED_NOTE = "removedrawednote";
 
-export const addNote = (note, pitch, velocity, color) => ({
+export const addNote = (pitch, velocity, color) => ({
   type: ON_NOTE_PRESSED,
-  payload: { note, pitch, velocity, color },
+  payload: { pitch, velocity, color },
 });
 
 export const removeNote = (pitch) => ({
@@ -12,9 +14,9 @@ export const removeNote = (pitch) => ({
   payload: { pitch },
 });
 
-export const removeDrawedNote = (id) => ({
+export const removeDrawedNote = (index) => ({
   type: REMOVE_DRAWED_NOTE,
-  payload: { id },
+  payload: { index },
 });
 
 export const noteReducer = (prevState, action) => {
@@ -27,16 +29,16 @@ export const noteReducer = (prevState, action) => {
         track,
         startRecordingTime,
       } = prevState;
-      const { note, pitch, velocity, color } = action.payload;
+      const { pitch, velocity, color } = action.payload;
 
       const created = Date.now();
       const newActiveNotes = {
         ...activeNotes,
-        [pitch]: { note, created },
+        [pitch]: { created },
       };
       const newDrawedNotes = {
         ...drawedNotes,
-        [note.id]: { pitch, created, color, ended: null },
+        [pitch + "_" + created]: { pitch, created, color, ended: null },
       };
 
       let newStartRecordingTime = startRecordingTime,
@@ -75,10 +77,12 @@ export const noteReducer = (prevState, action) => {
 
       // This is a side-effect but it will not do anything strange (I think)
       if (pitch in newActiveNotes) {
-        const { note } = newActiveNotes[pitch];
-        note.stop();
+        const { created } = newActiveNotes[pitch];
+        // note.stop();
+        const noteStr = getNoteFromMidiNumber(pitch);
+        prevState.instrument.keyUp({ note: noteStr });
 
-        newDrawedNotes[note.id].ended = Date.now();
+        newDrawedNotes[pitch + "_" + created].ended = Date.now();
       }
 
       delete newActiveNotes[pitch];
@@ -104,12 +108,12 @@ export const noteReducer = (prevState, action) => {
     }
     case REMOVE_DRAWED_NOTE: {
       const { drawedNotes } = prevState;
-      const { id } = action.payload;
+      const { index } = action.payload;
 
-      if (!Object.keys(drawedNotes).includes(id)) return prevState;
+      if (!Object.keys(drawedNotes).includes(index)) return prevState;
 
       let newDrawedNotes = { ...drawedNotes };
-      delete newDrawedNotes[id];
+      delete newDrawedNotes[index];
 
       return {
         ...prevState,

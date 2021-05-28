@@ -95,7 +95,7 @@ const PianoNote = ({
         (noteName.includes("b") ? "black" : "white") + (active ? " active" : "")
       }
       date-key={noteName}
-      onMouseDown={() => onPlayNote(getMidiNumberFromNote(noteName), 1)}
+      onMouseDown={() => onPlayNote(getMidiNumberFromNote(noteName), 0.5)}
       onMouseUp={() => onStopNote(getMidiNumberFromNote(noteName))}
       onMouseLeave={() => onStopNote(getMidiNumberFromNote(noteName))}
       {...props}

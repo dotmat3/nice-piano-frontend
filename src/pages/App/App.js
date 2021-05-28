@@ -7,6 +7,8 @@ import Piano from "../../components/Piano";
 import PianoWaterfall from "../../components/PianoWaterfall";
 import MenuBar from "../../components/MenuBar";
 
+import { Piano as TonePiano } from "@tonejs/piano";
+
 import {
   formatTime,
   parseMidiMessage,
@@ -116,12 +118,13 @@ const App = () => {
 
   const playNote = useCallback(
     (pitch, velocity, emitEvent) => {
-      const note = state.instrument.play(pitch, AUDIO_CONTEXT.currentTime, {
-        gain: velocity,
-        sustain: state.volume,
-        loop: state.instrumentName !== "acoustic_grand_piano",
-      });
+      // const note = state.instrument.play(pitch, AUDIO_CONTEXT.currentTime, {
+      //   gain: velocity,
+      //   sustain: state.volume,
+      //   loop: state.instrumentName !== "acoustic_grand_piano",
+      // });
       const noteStr = getNoteFromMidiNumber(pitch);
+      state.instrument.keyDown({ note: noteStr, velocity });
       const color = emitEvent
         ? noteStr.includes("b")
           ? "#06f"
@@ -129,7 +132,7 @@ const App = () => {
         : noteStr.includes("b")
         ? "#ba8900"
         : "#fcba03";
-      dispatch(addNote(note, pitch, velocity, color));
+      dispatch(addNote(pitch, velocity, color));
       if (emitEvent) state.socket.emit("note_on", { pitch, velocity });
     },
     [state.socket, state.instrument, state.instrumentName, state.volume]
@@ -162,6 +165,11 @@ const App = () => {
     (msg) => {
       const { command, pitch, velocity } = parseMidiMessage(msg);
 
+      if (command == 11 && pitch == 64) {
+        if (velocity == 1) state.instrument.pedalDown();
+        else state.instrument.pedalUp();
+      }
+
       if (command !== 9 && command !== 8) return;
 
       const transposedPitch = pitch + state.transposition * 12;
@@ -169,7 +177,7 @@ const App = () => {
       if (command === 8 || velocity === 0) stopNote(transposedPitch, true);
       else if (command === 9) playNote(transposedPitch, velocity, true);
     },
-    [state.transposition, playNote, stopNote]
+    [state.transposition, state.instrument, playNote, stopNote]
   );
 
   const onStartRecording = () => {
@@ -245,8 +253,15 @@ const App = () => {
       console.debug("Done");
 
       // Set initial instrument
-      const instrument = await changeInstrument(DEFAULT_INSTRUMENT);
-      dispatch(setInstrument(DEFAULT_INSTRUMENT, instrument));
+      // const instrument = await changeInstrument(DEFAULT_INSTRUMENT);
+      // dispatch(setInstrument(DEFAULT_INSTRUMENT, instrument));
+
+      // create the piano and load 5 velocity steps
+      const piano = new TonePiano({ velocities: 5 });
+      //connect it to the speaker output
+      piano.toDestination();
+      await piano.load();
+      dispatch(setInstrument(DEFAULT_INSTRUMENT, piano));
 
       const access = await navigator.requestMIDIAccess();
       dispatch(setMidiAccess(access));
