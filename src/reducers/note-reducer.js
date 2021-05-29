@@ -73,7 +73,7 @@ export const noteReducer = (prevState, action) => {
       const { pitch } = action.payload;
 
       let newActiveNotes = { ...activeNotes },
-        newDrawedNotes = { ...drawedNotes };
+        newDrawedNotes = drawedNotes;
 
       // This is a side-effect but it will not do anything strange (I think)
       if (pitch in newActiveNotes) {
