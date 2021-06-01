@@ -1,0 +1,81 @@
+.right-side-bar,
+.left-side-bar {
+  background-color: var(--background-2);
+  position: absolute;
+  top: 0;
+  width: 500px;
+  height: 100%;
+  z-index: 2000;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+
+  h1 {
+    color: var(--primary);
+    font-weight: bold;
+    text-align: center;
+    font-size: 35px;
+    margin-top: 10px;
+  }
+
+  label {
+    font-size: 25px;
+    margin-top: 20px;
+    padding: 10px;
+    color: var(--secondary);
+    font-weight: bold;
+  }
+
+  select,
+  input[type="number"] {
+    height: 40px;
+    border: none;
+    font-size: 20px;
+    padding: 0 5px;
+    border-radius: 5px;
+  }
+
+  select:focus {
+    outline: none;
+  }
+}
+
+.left-side-bar {
+  left: 0;
+}
+
+.right-side-bar {
+  right: 0;
+}
+
+.overlay {
+  background-color: black;
+  opacity: 0.2;
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  z-index: 1500;
+}
+
+/* Recordings */
+.recording {
+  width: 100%;
+  border-bottom: 2px solid var(--tertiary);
+  padding: 10px;
+  color: black;
+  cursor: pointer;
+
+  p:nth-child(1) {
+    color: var(--primary);
+    font-weight: bold;
+    font-size: 25px;
+  }
+
+  p {
+    font-size: 14px;
+  }
+
+  &:hover {
+    background-color: var(--tertiary);
+  }
+}

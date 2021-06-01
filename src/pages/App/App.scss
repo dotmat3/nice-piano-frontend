@@ -1,33 +1,17 @@
-@import url("https://fonts.googleapis.com/css2?family=Open+Sans&display=swap");
-
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Open Sans", sans-serif;
+  font-family: "Poppins", sans-serif;
 }
 
 :root {
-  --button-color: #383838;
-  --rec-button-color: #eb3939;
-  --text-color: #383838;
-  --background: #f0f0f0;
-
-  --waterfall: #cecece;
-
-  --keyboard: #9b080e;
-  --keyboard-shadow: #630508;
-
-  --keyboard-white: #f7fff7;
-  --keyboard-white-shade: #d9dfd9;
-  --keyboard-white-pressed: #d3d3d3;
-  --keyboard-black: #292929;
-  --keyboard-black-shade: #181818;
-  --keyboard-black-pressed: #111111;
-  --keyboard-label: rgba(--keyboard-black, 0.5);
-
-  --keyboard-white-height: 120px;
-  --keyboard-black-height: 80px;
+  --background: rgb(229, 221, 221);
+  --background-2: rgb(232, 209, 207);
+  --primary: rgba(249, 87, 75);
+  --primary-text: white;
+  --secondary: rgb(244, 114, 104);
+  --tertiary: rgb(236, 184, 181);
 }
 
 html,
@@ -38,35 +22,39 @@ body,
   height: 100%;
 }
 
-.App {
-  font-family: sans-serif;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
+body {
   background-color: var(--background);
-  padding: 4px;
+}
 
-  &.recording {
-    padding: 0;
-    border: 4px solid var(--rec-button-color);
-  }
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--secondary);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
 }
 
 header {
+  position: relative;
   width: 100%;
+  padding: 30px 40px;
   display: flex;
-  flex-direction: row;
   justify-content: space-between;
-  align-items: center;
-  padding: 20px;
+  z-index: 1000;
+}
 
-  p {
-    padding: 0 26px;
-    font-size: 24px;
-    color: var(--text-color);
-
-    &.latency {
-      font-size: 14px;
-    }
-  }
+svg.bg {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -40%);
 }

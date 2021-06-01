@@ -83,9 +83,8 @@ export const noteReducer = (prevState, action) => {
         prevState.instrument.keyUp({ note: noteStr });
 
         newDrawedNotes[pitch + "_" + created].ended = Date.now();
+        delete newActiveNotes[pitch];
       }
-
-      delete newActiveNotes[pitch];
 
       let newTrack = { ...track };
 

@@ -5,7 +5,7 @@ import { getNoteFromMidiNumber, getMidiNumberFromNote } from "../../utils";
 
 import "./Piano.scss";
 
-const Piano = ({ octaves, activeNotes, onPlayNote, onStopNote }) => {
+const Piano = ({ octaves, activeNotes, onPlayNote, onStopNote, hideNotes }) => {
   if (!octaves || octaves < 1 || octaves > 9)
     throw new Error("Number of octaves not defined or outside valid range");
 
@@ -18,25 +18,26 @@ const Piano = ({ octaves, activeNotes, onPlayNote, onStopNote }) => {
           activeNotes={activeNotes}
           onPlayNote={onPlayNote}
           onStopNote={onStopNote}
+          hideNotes={hideNotes}
         />
       ))}
     </div>
   );
 };
 
-const PianoOctave = ({ number, activeNotes, onPlayNote, onStopNote }) => {
+const PianoOctave = ({
+  number,
+  activeNotes,
+  onPlayNote,
+  onStopNote,
+  hideNotes,
+}) => {
   if (number === undefined || number == null || number < 0 || number > 9)
     throw new Error(
       "The octave " + number + " doesn't exists in a piano: valid range [0:8]"
     );
 
   let notes = Object.keys(BASES);
-
-  // if (number === 0) {
-  //   notes = ["A", "B"];
-  // } else if (number === 8) {
-  //   notes = ["C"];
-  // }
 
   const isNoteActive = (note) => {
     const midi = getMidiNumberFromNote(note);
@@ -54,6 +55,7 @@ const PianoOctave = ({ number, activeNotes, onPlayNote, onStopNote }) => {
             active={isNoteActive(value + number)}
             onPlayNote={onPlayNote}
             onStopNote={onStopNote}
+            hideNotes={hideNotes}
           />
         ))}
       </div>
@@ -66,6 +68,7 @@ const PianoOctave = ({ number, activeNotes, onPlayNote, onStopNote }) => {
             active={isNoteActive(value + "b" + number)}
             onPlayNote={onPlayNote}
             onStopNote={onStopNote}
+            hideNotes={true}
           />
         ))}
         <PianoNote half />
@@ -80,6 +83,7 @@ const PianoNote = ({
   active,
   onPlayNote,
   onStopNote,
+  hideNotes,
   ...props
 }) => {
   if (half) return <button className="black hidden half" />;
@@ -97,10 +101,10 @@ const PianoNote = ({
       date-key={noteName}
       onMouseDown={() => onPlayNote(getMidiNumberFromNote(noteName), 0.5)}
       onMouseUp={() => onStopNote(getMidiNumberFromNote(noteName))}
-      onMouseLeave={() => onStopNote(getMidiNumberFromNote(noteName))}
+      // onMouseLeave={() => onStopNote(getMidiNumberFromNote(noteName))}
       {...props}
     >
-      {noteName.includes("b") ? null : noteName}
+      {hideNotes ? null : noteName}
     </button>
   );
 };

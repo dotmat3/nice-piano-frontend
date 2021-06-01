@@ -1,0 +1,13 @@
+.piano-waterfall {
+  flex-grow: 1;
+  width: calc(100% - 164px);
+  height: 100%;
+  position: relative;
+  display: flex;
+  margin: 5px calc(50px + 32px);
+  margin-bottom: 5px;
+
+  canvas {
+    width: 100%;
+  }
+}

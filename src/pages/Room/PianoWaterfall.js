@@ -1,9 +1,12 @@
-import React, { useEffect, useCallback, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 
 import { BASES } from "../../constants";
 import { getNoteFromMidiNumber } from "../../utils";
 
 import "./PianoWaterfall.scss";
+
+const SLOW_FACTOR = 0.2;
+const KEYBOARD_KEYS = 9 * 7;
 
 const drawNote = (ctx, x, y, height, width, color) => {
   ctx.strokeStyle = color;
@@ -15,19 +18,15 @@ const drawNote = (ctx, x, y, height, width, color) => {
   ctx.stroke();
 };
 
-const NOTE_WIDTH = 28;
-const CANVAS_WIDTH = 700;
-const CANVAS_HEIGHT = 400;
-const SLOW_FACTOR = 0.2;
-
-const KEYBOARD_KEYS = 9 * 7;
-
 const PianoWaterfall = ({ drawedNotes, removeNote }) => {
+  const canvasRef = useRef(null);
   const notesRef = useRef(null);
+  const animationFrameHandle = useRef(null);
+
   notesRef.current = drawedNotes;
 
   const draw = useCallback(() => {
-    const canvas = document.querySelector("canvas");
+    const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
@@ -40,20 +39,22 @@ const PianoWaterfall = ({ drawedNotes, removeNote }) => {
       let pitch = parseInt(noteStr.substr(noteStr.length - 1, 1)) * 7;
       pitch += Object.keys(BASES).indexOf(noteStr.substr(0, 1));
 
+      const noteWidth = canvas.offsetWidth / (9 * 7);
+
       let x;
       if (noteStr.includes("b"))
-        x = ((pitch - 1) * canvas.offsetWidth) / KEYBOARD_KEYS + NOTE_WIDTH / 2;
+        x = ((pitch - 1) * canvas.offsetWidth) / KEYBOARD_KEYS + noteWidth / 2;
       else x = (pitch * canvas.offsetWidth) / KEYBOARD_KEYS;
 
       const now = Date.now();
       const millis = (now - note.created) * SLOW_FACTOR;
-      let y = canvas.offsetHeight - millis;
+      const y = canvas.offsetHeight - millis;
 
       const ended = note.ended ? note.ended : now;
       const end_millis = (now - ended) * SLOW_FACTOR;
-      let end_y = canvas.offsetHeight - end_millis;
+      const end_y = canvas.offsetHeight - end_millis;
 
-      let height = end_y - y;
+      const height = end_y - y;
 
       if (y + height < 0) removeNote(index);
 
@@ -62,7 +63,7 @@ const PianoWaterfall = ({ drawedNotes, removeNote }) => {
         x,
         y,
         height,
-        noteStr.includes("b") ? NOTE_WIDTH - 4 : NOTE_WIDTH,
+        noteStr.includes("b") ? noteWidth - 4 : noteWidth,
         note.color
       );
     }
@@ -70,13 +71,22 @@ const PianoWaterfall = ({ drawedNotes, removeNote }) => {
     window.requestAnimationFrame(draw);
   }, [removeNote]);
 
-  const animationFrameHandle = useRef(null);
+  useEffect(() => {
+    const resizeCanvas = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+
+    window.onresize = resizeCanvas;
+    resizeCanvas();
+
+    return () => (window.onresize = null);
+  }, [canvasRef]);
 
   useEffect(() => {
-    const canvas = document.querySelector("canvas");
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-
     animationFrameHandle.current = window.requestAnimationFrame(draw);
 
     return () => {
@@ -86,14 +96,7 @@ const PianoWaterfall = ({ drawedNotes, removeNote }) => {
 
   return (
     <div className="piano-waterfall">
-      <canvas
-        width={CANVAS_WIDTH}
-        height={CANVAS_HEIGHT}
-        style={{
-          width: "100%",
-          height: "100%",
-        }}
-      />
+      <canvas ref={canvasRef} />
     </div>
   );
 };
