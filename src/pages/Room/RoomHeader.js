@@ -20,6 +20,8 @@ const RoomHeader = ({
   isPlayingRecording,
   onOpenSettings,
   onOpenRecordings,
+  onOpenUserInfo,
+  username,
 }) => {
   return (
     <header>
@@ -42,7 +44,7 @@ const RoomHeader = ({
           <FontAwesomeIcon icon={faSyncAlt} color="var(--primary)" size="lg" />
         </Section>
         <Section className="row users">
-          <UserProfile username={"DotMat"} />
+          <UserProfile username={username} />
           <UserProfile username={"SkyLion"} />
           <UserProfile username={"DotMat"} />
           <span>+3</span>
@@ -55,7 +57,7 @@ const RoomHeader = ({
             onClick={onOpenSettings}
           />
         </Section>
-        <UserProfile username={"DotMat"} />
+        <UserProfile username={username} onClick={onOpenUserInfo} />
       </div>
     </header>
   );

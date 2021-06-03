@@ -79,3 +79,19 @@
     background-color: var(--tertiary);
   }
 }
+
+/* User */
+.sign-out {
+  background-color: var(--tertiary);
+  border: none;
+  height: 40px;
+  color: white;
+  font-size: 20px;
+  border-radius: 15px;
+  margin: 20px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--secondary);
+  }
+}

@@ -6,17 +6,33 @@ import Header from "../../components/Header";
 
 import { ReactComponent as PrimaryBGSVG } from "./assets/bg3.svg";
 
+import { Auth } from "aws-amplify";
+
 import "./SignIn.scss";
 
 const SignIn = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
+  const [loading, setLoading] = useState(false);
   const [redirect, setRedirect] = useState(false);
 
-  const handleLogin = useCallback(() => {
-    setRedirect(true);
-  }, []);
+  const handleLogin = useCallback(
+    async (e) => {
+      e.preventDefault();
+      if (loading) return;
+
+      try {
+        setLoading(true);
+        await Auth.signIn({ username, password });
+        setLoading(false);
+        setRedirect(true);
+      } catch (error) {
+        alert(error.message);
+      }
+    },
+    [username, password, loading]
+  );
 
   if (redirect) return <Redirect to="/room/123" />;
 
@@ -28,22 +44,26 @@ const SignIn = () => {
         <div className="content">
           <h1>Sign in</h1>
           <div className="container">
-            <label>Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.currentTarget.value)}
-            />
-            <label>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.currentTarget.value)}
-            />
-            <p>
-              Not registered yet? <Link to="signup">Sign up</Link>
-            </p>
-            <button onClick={handleLogin}>Login</button>
+            <form onSubmit={handleLogin}>
+              <label>Username</label>
+              <input
+                type="text"
+                autoComplete="username"
+                value={username}
+                onChange={(e) => setUsername(e.currentTarget.value)}
+              />
+              <label>Password</label>
+              <input
+                type="password"
+                autoComplete="password"
+                value={password}
+                onChange={(e) => setPassword(e.currentTarget.value)}
+              />
+              <p>
+                Not registered yet? <Link to="signup">Sign up</Link>
+              </p>
+              <button>{loading ? "Loading..." : "Login"}</button>
+            </form>
           </div>
         </div>
       </main>

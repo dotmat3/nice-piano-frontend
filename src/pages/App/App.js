@@ -7,6 +7,11 @@ import SignIn from "../SignIn";
 import SignUp from "../SignUp";
 import Room from "../Room";
 
+import { Auth } from "aws-amplify";
+import awsConfig from "../../auth";
+
+Auth.configure(awsConfig);
+
 import "./App.scss";
 
 const App = () => {
