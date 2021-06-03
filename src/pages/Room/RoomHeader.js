@@ -22,6 +22,7 @@ const RoomHeader = ({
   onOpenSettings,
   onOpenRecordings,
   onOpenUserInfo,
+  users,
   username,
 }) => {
   return (
@@ -46,10 +47,15 @@ const RoomHeader = ({
           <FontAwesomeIcon icon={faSyncAlt} color="var(--primary)" size="lg" />
         </Section>
         <Section className="row users">
-          <UserProfile username={username} />
-          <UserProfile username={"SkyLion"} />
-          <UserProfile username={"DotMat"} />
-          <span>+3</span>
+          {users &&
+            Object.keys(users)
+              .slice(0, 3)
+              .map((name, index) => (
+                <UserProfile key={index} username={name} />
+              ))}
+          {users && Object.keys(users).length > 3 && (
+            <span>+ {Object.keys(users).length - 3}</span>
+          )}
         </Section>
         <Section className="row settings">
           <FontAwesomeIcon

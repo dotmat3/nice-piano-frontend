@@ -44,5 +44,9 @@
   > .user-profile {
     margin-left: 15px;
     cursor: pointer;
+
+    &:hover {
+      transform: scale(1.1);
+    }
   }
 }

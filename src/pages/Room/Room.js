@@ -22,6 +22,21 @@ import { getNoteFromMidiNumber, parseMidiMessage } from "../../utils";
 import "./Room.scss";
 import "./SideBar.scss";
 
+// TODO: REMOVE THIS
+const TEST_USERS = {
+  dotmat: 3,
+  skylion: 7,
+  test: 10,
+  test2: 22,
+  dotmat1: 3,
+  skylion1: 7,
+  test1: 10,
+  test12: 22,
+  dotmat2: 3,
+  skylion2: 7,
+  test22: 10,
+};
+
 const ProtectedRoom = () => {
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState(null);
@@ -58,8 +73,10 @@ const Room = ({ username }) => {
   const [midiInput, setMidiInput] = useState("None");
   const [midiOutput, setMidiOutput] = useState("None");
   const [transposition, setTransposition] = useState(0);
+  const [hideNotes, setHideNotes] = useState(true);
 
   const [notes, setNotes] = useState({ activeNotes: {}, drawedNotes: {} });
+  const [users] = useState(TEST_USERS);
 
   const [isPlayingRecording, setIsPlayingRecording] = useState(false);
 
@@ -253,6 +270,7 @@ const Room = ({ username }) => {
         onOpenRecordings={() => setShowRecordingsSideBar(true)}
         onOpenUserInfo={() => setShowUserSideBar(true)}
         username={username}
+        users={users}
       />
       <main>
         <Section className="room-name" onClick={() => setShowRoomSideBar(true)}>
@@ -267,7 +285,7 @@ const Room = ({ username }) => {
           activeNotes={notes.activeNotes}
           onPlayNote={(pitch, velocity) => playNote(pitch, velocity, true)}
           onStopNote={(pitch) => stopNote(pitch, true)}
-          hideNotes
+          hideNotes={hideNotes}
         />
       </main>
       <PrimaryBGSVG className="bg" />
@@ -280,6 +298,8 @@ const Room = ({ username }) => {
           setMidiOutput={setMidiOutput}
           transposition={transposition}
           setTransposition={setTransposition}
+          hideNotes={hideNotes}
+          setHideNotes={setHideNotes}
           onExit={() => setShowSettingsSideBar(false)}
         />
       )}
@@ -289,6 +309,7 @@ const Room = ({ username }) => {
       {showRoomSideBar && (
         <RoomSideBar
           roomName={roomName}
+          users={users}
           onExit={() => setShowRoomSideBar(false)}
         />
       )}
