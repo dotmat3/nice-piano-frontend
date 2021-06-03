@@ -18,6 +18,7 @@ import "./RoomHeader.scss";
 
 const RoomHeader = ({
   isPlayingRecording,
+  setIsPlayingRecording,
   onOpenSettings,
   onOpenRecordings,
   onOpenUserInfo,
@@ -32,6 +33,7 @@ const RoomHeader = ({
             icon={isPlayingRecording ? faStop : faPlay}
             color="var(--primary)"
             size="lg"
+            onClick={() => setIsPlayingRecording(!isPlayingRecording)}
           />
           <p>Sample 2</p>
           <FontAwesomeIcon

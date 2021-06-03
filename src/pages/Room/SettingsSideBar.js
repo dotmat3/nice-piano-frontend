@@ -1,26 +1,53 @@
 import React from "react";
 
-const SettingsSideBar = ({ onExit }) => {
+const SettingsSideBar = ({
+  midiAccess,
+  midiInput,
+  setMidiInput,
+  midiOutput,
+  setMidiOutput,
+  transposition,
+  setTransposition,
+  onExit,
+}) => {
   return (
     <>
       <div className="right-side-bar settings">
         <h1>Settings</h1>
         <label>MIDI Input</label>
-        <select>
-          <option>Midi device</option>
-          <option>Another Midi device</option>
-          <option>Not a Midi device</option>
+        <select
+          value={midiInput}
+          onChange={(e) => setMidiInput(e.currentTarget.value)}
+        >
+          {midiAccess &&
+            Array.from(midiAccess.inputs.values()).map((device) => (
+              <option key={device.id} value={device.id}>
+                {device.name}
+              </option>
+            ))}
+          <option value="none">None</option>
         </select>
         <label>MIDI Output</label>
-        <select>
-          <option>Midi device</option>
-          <option>Another Midi device</option>
-          <option>Not a Midi device</option>
+        <select
+          value={midiOutput}
+          onChange={(e) => setMidiOutput(e.currentTarget.value)}
+        >
+          {midiAccess &&
+            Array.from(midiAccess.outputs.values()).map((device) => (
+              <option key={device.id} value={device.id}>
+                {device.name}
+              </option>
+            ))}
+          <option value="none">None</option>
         </select>
         <label>Volume</label>
         <input type="range" />
         <label>Transpose</label>
-        <input type="number" />
+        <input
+          type="number"
+          value={transposition}
+          onChange={(e) => setTransposition(e.currentTarget.value)}
+        />
       </div>
       <div className="overlay" onClick={onExit}></div>
     </>
