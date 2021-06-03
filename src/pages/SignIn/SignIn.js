@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, Redirect } from "react-router-dom";
-import { useCallback } from "react/cjs/react.development";
+import { useCallback, useEffect } from "react/cjs/react.development";
 
 import Header from "../../components/Header";
 
@@ -16,6 +16,14 @@ const SignIn = () => {
 
   const [loading, setLoading] = useState(false);
   const [redirect, setRedirect] = useState(false);
+
+  useEffect(() => {
+    try {
+      Auth.currentAuthenticatedUser().then(() => setRedirect(true));
+    } catch (err) {
+      // Do nothing
+    }
+  }, []);
 
   const handleLogin = useCallback(
     async (e) => {
