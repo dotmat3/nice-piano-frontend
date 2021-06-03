@@ -70,7 +70,7 @@ const SignIn = () => {
               <p>
                 Not registered yet? <Link to="signup">Sign up</Link>
               </p>
-              <button>{loading ? "Loading..." : "Login"}</button>
+              <button>{loading ? "Validating..." : "Login"}</button>
             </form>
           </div>
         </div>

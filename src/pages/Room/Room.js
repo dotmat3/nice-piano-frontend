@@ -21,6 +21,7 @@ import { getNoteFromMidiNumber, parseMidiMessage } from "../../utils";
 
 import "./Room.scss";
 import "./SideBar.scss";
+import Loading from "../../components/Loading/Loading";
 
 // TODO: REMOVE THIS
 const TEST_USERS = {
@@ -55,7 +56,7 @@ const ProtectedRoom = () => {
     checkAuth();
   }, []);
 
-  if (loading) return <h1>Loading...</h1>;
+  if (loading) return <Loading />;
 
   return username ? <Room username={username} /> : <Redirect to="/signin" />;
 };
@@ -65,6 +66,8 @@ const Room = ({ username }) => {
   const [showRecordingsSideBar, setShowRecordingsSideBar] = useState(false);
   const [showRoomSideBar, setShowRoomSideBar] = useState(false);
   const [showUserSideBar, setShowUserSideBar] = useState(false);
+
+  const [ready, setReady] = useState(0);
 
   const [roomName] = useState("BellaRoom");
   const [socket, setSocket] = useState(null);
@@ -161,6 +164,7 @@ const Room = ({ username }) => {
     ws.once("connect", () => {
       console.debug("Websocket connected");
       setSocket(ws);
+      setReady((prev) => prev + 1);
 
       ws.on("ping", () => ws.emit("pong"));
     });
@@ -172,6 +176,7 @@ const Room = ({ username }) => {
     piano.toDestination();
     piano.load().then(() => {
       setInstrument(piano);
+      setReady((prev) => prev + 1);
       console.debug("Piano sounds loaded");
     });
   }, []);
@@ -185,6 +190,8 @@ const Room = ({ username }) => {
       // Set initial MIDI input
       const inputs = Array.from(access.inputs.values());
       if (inputs.length > 0) setMidiInput(inputs[0].id);
+
+      setReady((prev) => prev + 1);
     });
   }, []);
 
@@ -260,6 +267,8 @@ const Room = ({ username }) => {
       return { activeNotes: prev.activeNotes, drawedNotes: newDrawedNotes };
     });
   }, []);
+
+  if (ready < 3) return <Loading progress={Math.floor((ready * 100) / 3)} />;
 
   return (
     <div className="room">
