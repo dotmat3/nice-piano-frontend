@@ -288,7 +288,7 @@ const Room = ({ username }) => {
   }, [socket, instrument, playNote, stopNote]);
 
   useEffect(() => {
-    if (!midiAccess || !midiInput) return;
+    if (!midiAccess || !midiInput || !instrument || !socket) return;
 
     console.debug("Updating input-output devices", midiInput, midiOutput);
 
@@ -314,7 +314,14 @@ const Room = ({ username }) => {
       for (const input of midiAccess.inputs.values())
         input.onmidimessage = null;
     };
-  }, [midiInput, midiOutput, midiAccess, handleMidiMessage]);
+  }, [
+    midiInput,
+    midiOutput,
+    midiAccess,
+    socket,
+    instrument,
+    handleMidiMessage,
+  ]);
 
   // const generateRandomNotes = useCallback(
   //   (n) => {
