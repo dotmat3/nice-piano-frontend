@@ -1,30 +1,33 @@
 import React from "react";
 import { formatTime } from "../../utils";
 
-const Recording = ({ name, date, duration }) => {
+const Recording = ({ name, date, duration, ...props }) => {
   return (
-    <div className="recording">
+    <div {...props} className={"recording " + props.className}>
       <p>{name}</p>
       <p>
-        {date.toLocaleDateString("en-US")} | {formatTime(new Date(duration))}
+        {new Date(date).toLocaleDateString("en-US")} |{" "}
+        {formatTime(new Date(duration))}
       </p>
     </div>
   );
 };
 
-const RecordingsSideBar = ({ onExit }) => {
+const RecordingsSideBar = ({ recordings, onRecordingSelected, onExit }) => {
   return (
     <>
       <div className="right-side-bar recordings">
         <h1>Recordings</h1>
-        {[...Array(7)].map((_, index) => (
-          <Recording
-            key={index}
-            name={"Sample " + index}
-            date={new Date()}
-            duration={300000 * Math.random()}
-          />
-        ))}
+        {recordings &&
+          recordings.map((recording, index) => (
+            <Recording
+              key={index}
+              name={recording.name}
+              date={recording.startTime}
+              duration={recording.endTime - recording.startTime}
+              onClick={() => onRecordingSelected(recording)}
+            />
+          ))}
       </div>
       <div className="overlay" onClick={onExit}></div>
     </>

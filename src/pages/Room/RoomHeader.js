@@ -18,10 +18,17 @@ import "./RoomHeader.scss";
 
 const RoomHeader = ({
   isPlayingRecording,
-  setIsPlayingRecording,
+  isRecording,
+  isLooping,
+  onPlayRecording,
+  onResetRecording,
+  onStartRecording,
+  onStopRecording,
+  onToggleLooping,
   onOpenSettings,
   onOpenRecordings,
   onOpenUserInfo,
+  currentRecording,
   users,
   username,
 }) => {
@@ -34,17 +41,37 @@ const RoomHeader = ({
             icon={isPlayingRecording ? faStop : faPlay}
             color="var(--primary)"
             size="lg"
-            onClick={() => setIsPlayingRecording(!isPlayingRecording)}
+            onClick={() =>
+              isPlayingRecording ? onResetRecording() : onPlayRecording()
+            }
           />
-          <p>Sample 2</p>
+          <p>
+            {isRecording
+              ? "Recording..."
+              : currentRecording
+              ? currentRecording.name
+              : "Start to record..."}
+          </p>
           <FontAwesomeIcon
             icon={faList}
             color="var(--primary)"
             size="lg"
             onClick={onOpenRecordings}
           />
-          <FontAwesomeIcon icon={faCircle} color="var(--primary)" size="lg" />
-          <FontAwesomeIcon icon={faSyncAlt} color="var(--primary)" size="lg" />
+          <FontAwesomeIcon
+            icon={faCircle}
+            color={isRecording ? "var(--primary)" : "var(--tertiary)"}
+            size="lg"
+            onClick={() =>
+              isRecording ? onStopRecording() : onStartRecording()
+            }
+          />
+          <FontAwesomeIcon
+            icon={faSyncAlt}
+            color={isLooping ? "var(--primary)" : "var(--tertiary)"}
+            size="lg"
+            onClick={onToggleLooping}
+          />
         </Section>
         <Section className="row users">
           {users &&

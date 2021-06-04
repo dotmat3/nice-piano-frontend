@@ -38,6 +38,40 @@ const TEST_USERS = {
   test22: 10,
 };
 
+const TEST_RECORDINGS = [
+  {
+    name: "Sample 1",
+    startTime: Date.now(),
+    endTime: Date.now() + 100,
+    notes: [
+      { type: "note_on", pitch: 42, velocity: 0.5, time: 0 },
+      { type: "note_off", pitch: 42, time: 100 },
+    ],
+  },
+  {
+    name: "Sample 2",
+    startTime: Date.now(),
+    endTime: Date.now() + 200,
+    notes: [
+      { type: "note_on", pitch: 42, velocity: 0.5, time: 0 },
+      { type: "note_off", pitch: 42, time: 200 },
+    ],
+  },
+  {
+    name: "Sample 3",
+    startTime: Date.now(),
+    endTime: Date.now() + 300,
+    notes: [
+      { type: "note_on", pitch: 42, velocity: 0.5, time: 0 },
+      { type: "note_off", pitch: 42, time: 100 },
+      { type: "note_on", pitch: 42, velocity: 0.5, time: 100 },
+      { type: "note_off", pitch: 42, time: 200 },
+      { type: "note_on", pitch: 42, velocity: 0.5, time: 200 },
+      { type: "note_off", pitch: 42, time: 300 },
+    ],
+  },
+];
+
 const ProtectedRoom = () => {
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState(null);
@@ -81,7 +115,13 @@ const Room = ({ username }) => {
   const [notes, setNotes] = useState({ activeNotes: {}, drawedNotes: {} });
   const [users] = useState(TEST_USERS);
 
+  const [recordings] = useState(TEST_RECORDINGS);
+  const [currentRecording, setCurrentRecording] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
   const [isPlayingRecording, setIsPlayingRecording] = useState(false);
+  const [looping, setLooping] = useState(false);
+
+  const [timers, setTimers] = useState([]);
 
   const playNote = useCallback(
     (pitch, velocity, emitEvent) => {
@@ -95,24 +135,34 @@ const Room = ({ username }) => {
         ? "#ba8900"
         : "#fcba03";
       const created = Date.now();
-      setNotes((prev) => {
-        return {
-          activeNotes: { ...prev.activeNotes, [pitch]: { created } },
-          drawedNotes: {
-            ...prev.drawedNotes,
-            [pitch + "_" + created]: {
-              pitch,
-              created,
-              color,
-              ended: null,
-            },
+      setNotes((prev) => ({
+        activeNotes: { ...prev.activeNotes, [pitch]: { created } },
+        drawedNotes: {
+          ...prev.drawedNotes,
+          [pitch + "_" + created]: {
+            pitch,
+            created,
+            color,
+            ended: null,
           },
-        };
-      });
+        },
+      }));
+
+      if (isRecording) {
+        setCurrentRecording((prev) => {
+          const startTime = prev.startTime ? prev.startTime : Date.now();
+          const time = Date.now() - startTime;
+          const notes = [
+            ...prev.notes,
+            { type: "note_on", pitch, velocity, time },
+          ];
+          return { ...prev, startTime, notes };
+        });
+      }
 
       if (emitEvent) socket.emit("note_on", { pitch, velocity });
     },
-    [socket, instrument]
+    [socket, instrument, isRecording]
   );
 
   const stopNote = useCallback(
@@ -128,14 +178,37 @@ const Room = ({ username }) => {
           const { created } = newActiveNotes[pitch];
 
           newDrawedNotes[pitch + "_" + created].ended = Date.now();
+
           delete newActiveNotes[pitch];
         }
-        return { activeNotes: newActiveNotes, drawedNotes: newDrawedNotes };
+
+        return {
+          activeNotes: newActiveNotes,
+          drawedNotes: newDrawedNotes,
+        };
       });
+
+      if (isRecording) {
+        setCurrentRecording((prev) => {
+          const time = Date.now() - prev.startTime;
+          return {
+            ...prev,
+            notes: [
+              ...prev.notes,
+              {
+                type: "note_off",
+                pitch,
+                velocity: 0,
+                time,
+              },
+            ],
+          };
+        });
+      }
 
       if (emitEvent) socket.emit("note_off", { pitch });
     },
-    [socket, instrument]
+    [socket, instrument, isRecording]
   );
 
   const handleMidiMessage = useCallback(
@@ -196,7 +269,7 @@ const Room = ({ username }) => {
   }, []);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !instrument) return;
 
     const handlePlayNote = ({ pitch, velocity }) =>
       playNote(pitch, velocity, false);
@@ -209,7 +282,7 @@ const Room = ({ username }) => {
       socket.off("note_on", handlePlayNote);
       socket.off("note_off", handleStopNote);
     };
-  }, [socket, playNote, stopNote]);
+  }, [socket, instrument, playNote, stopNote]);
 
   useEffect(() => {
     if (!midiAccess || !midiInput) return;
@@ -264,7 +337,62 @@ const Room = ({ username }) => {
     setNotes((prev) => {
       const newDrawedNotes = { ...prev.drawedNotes };
       delete newDrawedNotes[index];
+
       return { activeNotes: prev.activeNotes, drawedNotes: newDrawedNotes };
+    });
+  }, []);
+
+  const onPlayRecording = useCallback(() => {
+    if (!currentRecording) return;
+
+    setIsPlayingRecording(true);
+    const track = currentRecording.notes;
+    const beginTime = Date.now();
+
+    const timers = [];
+    for (const event of track) {
+      const now = Date.now();
+      const { type, pitch, velocity, time } = event;
+      const timeout = beginTime + time - now;
+
+      const timer = setTimeout(() => {
+        if (type === "note_on") playNote(pitch, velocity, true);
+        else stopNote(pitch, true);
+      }, timeout);
+
+      timers.push(timer);
+    }
+
+    setTimers((prev) => [...prev, ...timers]);
+
+    const duration = currentRecording.endTime - currentRecording.startTime;
+    const lastTimer = setTimeout(() => {
+      // Handle loop or stop
+      if (looping) onPlayRecording();
+      else setIsPlayingRecording(false);
+    }, beginTime + duration - Date.now());
+
+    setTimers((prev) => [...prev, lastTimer]);
+  }, [currentRecording, looping, playNote, stopNote]);
+
+  const onResetRecording = useCallback(() => {
+    timers.forEach(clearTimeout);
+    Object.keys(notes.activeNotes).forEach((pitch) => stopNote(pitch, true));
+    setIsPlayingRecording(false);
+  }, [timers, notes, stopNote]);
+
+  const onStopRecording = useCallback(() => {
+    setCurrentRecording((prev) => ({ ...prev, endTime: Date.now() }));
+    setIsRecording(false);
+  }, []);
+
+  const onStartRecording = useCallback(() => {
+    setIsRecording(true);
+    setCurrentRecording({
+      name: "New Sample",
+      startTime: null,
+      endTime: null,
+      notes: [],
     });
   }, []);
 
@@ -274,10 +402,17 @@ const Room = ({ username }) => {
     <div className="room">
       <RoomHeader
         isPlayingRecording={isPlayingRecording}
-        setIsPlayingRecording={setIsPlayingRecording}
+        onPlayRecording={onPlayRecording}
+        onResetRecording={onResetRecording}
+        onStopRecording={onStopRecording}
+        onStartRecording={onStartRecording}
+        isRecording={isRecording}
+        isLooping={looping}
+        onToggleLooping={() => setLooping(!looping)}
         onOpenSettings={() => setShowSettingsSideBar(true)}
         onOpenRecordings={() => setShowRecordingsSideBar(true)}
         onOpenUserInfo={() => setShowUserSideBar(true)}
+        currentRecording={currentRecording}
         username={username}
         users={users}
       />
@@ -313,7 +448,11 @@ const Room = ({ username }) => {
         />
       )}
       {showRecordingsSideBar && (
-        <RecordingsSideBar onExit={() => setShowRecordingsSideBar(false)} />
+        <RecordingsSideBar
+          recordings={recordings}
+          onRecordingSelected={(value) => setCurrentRecording(value)}
+          onExit={() => setShowRecordingsSideBar(false)}
+        />
       )}
       {showRoomSideBar && (
         <RoomSideBar
