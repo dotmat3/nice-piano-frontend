@@ -28,7 +28,7 @@ div.room {
     flex-direction: column;
     z-index: 1000;
 
-    .room-name {
+    .details {
       position: absolute;
       top: 0;
       left: 0;
@@ -38,6 +38,10 @@ div.room {
       font-weight: bold;
       cursor: pointer;
       z-index: 1000;
+
+      svg {
+        margin: 0 10px;
+      }
 
       &:hover {
         transform: scale(1.05);

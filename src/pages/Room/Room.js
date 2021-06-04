@@ -5,10 +5,14 @@ import socketio from "socket.io-client";
 import { Piano as TonePiano } from "@tonejs/piano";
 import { Auth } from "aws-amplify";
 
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faShare } from "@fortawesome/free-solid-svg-icons";
+
 import Section from "../../components/Section";
 import RoomHeader from "./RoomHeader";
 import PianoWaterfall from "./PianoWaterfall";
 import Piano from "../../components/Piano";
+import Loading from "../../components/Loading/Loading";
 
 import { ReactComponent as PrimaryBGSVG } from "./assets/bg3.svg";
 
@@ -21,7 +25,6 @@ import { getNoteFromMidiNumber, parseMidiMessage } from "../../utils";
 
 import "./Room.scss";
 import "./SideBar.scss";
-import Loading from "../../components/Loading/Loading";
 
 const TEST_RECORDINGS = [
   {
@@ -90,7 +93,6 @@ const Room = ({ username }) => {
 
   const [ready, setReady] = useState(0);
 
-  const [roomName] = useState("BellaRoom");
   const [socket, setSocket] = useState(null);
   const [instrument, setInstrument] = useState(null);
   const [midiAccess, setMidiAccess] = useState(null);
@@ -432,8 +434,12 @@ const Room = ({ username }) => {
         users={users}
       />
       <main>
-        <Section className="room-name" onClick={() => setShowRoomSideBar(true)}>
-          {roomName}
+        <Section
+          className="row details"
+          onClick={() => setShowRoomSideBar(true)}
+        >
+          <span>Room Details</span>
+          <FontAwesomeIcon icon={faShare} color="var(--primary)" size="lg" />
         </Section>
         <PianoWaterfall
           drawedNotes={notes.drawedNotes}
@@ -471,7 +477,7 @@ const Room = ({ username }) => {
       )}
       {showRoomSideBar && (
         <RoomSideBar
-          roomName={roomName}
+          roomId={roomId}
           users={users}
           onExit={() => setShowRoomSideBar(false)}
         />

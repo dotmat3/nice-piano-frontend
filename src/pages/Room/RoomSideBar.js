@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 
 import UserProfile from "../../components/UserProfile";
 
-const RoomSideBar = ({ roomName, users, onExit }) => {
+const RoomSideBar = ({ roomId, users, onExit }) => {
   const [copiedURL, setCopiedURL] = useState(false);
   const [timer, setTimer] = useState(null);
 
@@ -22,7 +22,7 @@ const RoomSideBar = ({ roomName, users, onExit }) => {
   return (
     <>
       <div className="left-side-bar room-settings">
-        <h1>{roomName}</h1>
+        <h1>Room: {roomId}</h1>
         <button onClick={handleCopyURL}>
           {copiedURL ? "Copied" : "Copy url to clipboard"}
         </button>
