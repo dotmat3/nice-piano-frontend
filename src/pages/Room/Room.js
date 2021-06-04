@@ -3,7 +3,7 @@ import { Redirect } from "react-router";
 
 import socketio from "socket.io-client";
 import { Piano as TonePiano } from "@tonejs/piano";
-import { Auth } from "aws-amplify";
+import { Auth, input } from "aws-amplify";
 
 import Section from "../../components/Section";
 import RoomHeader from "./RoomHeader";
@@ -262,7 +262,10 @@ const Room = ({ username }) => {
 
       // Set initial MIDI input
       const inputs = Array.from(access.inputs.values());
-      if (inputs.length > 0) setMidiInput(inputs[0].id);
+      const prevMidiInput = localStorage.getItem("prev-midi-input");
+      if (prevMidiInput && inputs.find((input) => prevMidiInput === input.id))
+        setMidiInput(prevMidiInput);
+      else if (inputs.length > 0) setMidiInput(inputs[0].id);
 
       setReady((prev) => prev + 1);
     });

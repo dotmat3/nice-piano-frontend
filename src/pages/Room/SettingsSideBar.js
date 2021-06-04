@@ -12,15 +12,18 @@ const SettingsSideBar = ({
   setHideNotes,
   onExit,
 }) => {
+  const handleMidiInputChange = (e) => {
+    const id = e.currentTarget.value;
+    localStorage.setItem("prev-midi-input", id);
+    setMidiInput(id);
+  };
+
   return (
     <>
       <div className="right-side-bar settings">
         <h1>Settings</h1>
         <label>MIDI Input</label>
-        <select
-          value={midiInput}
-          onChange={(e) => setMidiInput(e.currentTarget.value)}
-        >
+        <select value={midiInput} onChange={handleMidiInputChange}>
           {midiAccess &&
             Array.from(midiAccess.inputs.values()).map((device) => (
               <option key={device.id} value={device.id}>
