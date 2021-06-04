@@ -101,7 +101,9 @@ const PianoNote = ({
       data-key={noteName}
       onMouseDown={() => onPlayNote(getMidiNumberFromNote(noteName), 0.5)}
       onMouseUp={() => onStopNote(getMidiNumberFromNote(noteName))}
-      // onMouseLeave={() => onStopNote(getMidiNumberFromNote(noteName))}
+      onMouseLeave={() => {
+        if (active) onStopNote(getMidiNumberFromNote(noteName));
+      }}
       {...props}
     >
       {hideNotes ? null : noteName}

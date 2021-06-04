@@ -34,6 +34,7 @@
 
 .piano-octave-black {
   height: var(--keyboard-black-height);
+  pointer-events: none;
 }
 
 .piano button {
@@ -44,6 +45,11 @@
   color: var(--keyboard-label);
   border-radius: 0px 0px 4px 4px;
   border: 1px solid var(--keyboard);
+
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
 }
 
 .piano button.white {
@@ -52,6 +58,8 @@
   height: 100%;
   box-shadow: inset var(--keyboard-white-shade) 0 -10px 0 0;
   padding-top: 80px;
+
+  pointer-events: all;
 }
 
 .piano button.white:active,
@@ -71,6 +79,7 @@
   transform: translateY(-10px);
   box-shadow: inset var(--keyboard-black-shade) 0 -10px 0 0;
   margin: 0 1px;
+  pointer-events: all;
 }
 
 .piano button.black.half {
@@ -79,6 +88,7 @@
 
 .piano button.black.hidden {
   visibility: hidden;
+  pointer-events: none;
 }
 
 .piano button.black:active,
