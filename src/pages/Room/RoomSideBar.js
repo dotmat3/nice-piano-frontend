@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import UserProfile from "../../components/UserProfile";
 
@@ -8,16 +8,25 @@ const RoomSideBar = ({ roomId, users, onExit }) => {
 
   useEffect(() => {
     return () => {
-      if (timer) clearTimeout(timer);
+      if (timer) {
+        setCopiedURL(false);
+        setTimer(null);
+        clearTimeout(timer);
+      }
     };
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleCopyURL = () => {
+  const handleCopyURL = useCallback(() => {
     setCopiedURL(true);
     navigator.clipboard.writeText(window.location.href);
+    if (timer) {
+      setTimer(null);
+      clearTimeout(timer);
+    }
     const timeout = setTimeout(() => setCopiedURL(false), 1000);
     setTimer(timeout);
-  };
+  }, [timer]);
 
   return (
     <>
