@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Redirect } from "react-router";
+import { Redirect, useParams } from "react-router";
 
 import socketio from "socket.io-client";
 import { Piano as TonePiano } from "@tonejs/piano";
-import { Auth, input } from "aws-amplify";
+import { Auth } from "aws-amplify";
 
 import Section from "../../components/Section";
 import RoomHeader from "./RoomHeader";
@@ -22,21 +22,6 @@ import { getNoteFromMidiNumber, parseMidiMessage } from "../../utils";
 import "./Room.scss";
 import "./SideBar.scss";
 import Loading from "../../components/Loading/Loading";
-
-// TODO: REMOVE THIS
-const TEST_USERS = {
-  dotmat: 3,
-  skylion: 7,
-  test: 10,
-  test2: 22,
-  dotmat1: 3,
-  skylion1: 7,
-  test1: 10,
-  test12: 22,
-  dotmat2: 3,
-  skylion2: 7,
-  test22: 10,
-};
 
 const TEST_RECORDINGS = [
   {
@@ -96,6 +81,8 @@ const ProtectedRoom = () => {
 };
 
 const Room = ({ username }) => {
+  const roomId = useParams().id;
+
   const [showSettingsSideBar, setShowSettingsSideBar] = useState(false);
   const [showRecordingsSideBar, setShowRecordingsSideBar] = useState(false);
   const [showRoomSideBar, setShowRoomSideBar] = useState(false);
@@ -113,7 +100,7 @@ const Room = ({ username }) => {
   const [hideNotes, setHideNotes] = useState(true);
 
   const [notes, setNotes] = useState({ activeNotes: {}, drawedNotes: {} });
-  const [users] = useState(TEST_USERS);
+  const [users, setUsers] = useState({});
 
   const [recordings] = useState(TEST_RECORDINGS);
   const [currentRecording, setCurrentRecording] = useState(null);
@@ -236,12 +223,30 @@ const Room = ({ username }) => {
     const ws = socketio.connect(address, { transports: ["websocket"] });
     ws.once("connect", () => {
       console.debug("Websocket connected");
+      ws.emit("joinRoom", { username, roomId });
+      ws.on("ping", () => ws.emit("pong"));
+
+      // Register user events
+      ws.on("latency", ({ username, latency }) => {
+        setUsers((users) => ({ ...users, [username]: latency }));
+      });
+
+      ws.on("userDisconnected", (username) => {
+        setUsers((users) => {
+          const newUsers = { ...users };
+          delete newUsers[username];
+          return newUsers;
+        });
+      });
+
+      ws.on("newUser", (username) => {
+        setUsers((users) => ({ ...users, [username]: null }));
+      });
+
       setSocket(ws);
       setReady((prev) => prev + 1);
-
-      ws.on("ping", () => ws.emit("pong"));
     });
-  }, []);
+  }, [roomId, username]);
 
   useEffect(() => {
     console.debug("Loading piano sounds...");

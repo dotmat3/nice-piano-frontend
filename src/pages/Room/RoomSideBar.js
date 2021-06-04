@@ -42,7 +42,7 @@ const UserRow = ({ name, latency }) => {
   return (
     <div className="user-row">
       <UserProfile username={name} />
-      <p>{latency} ms</p>
+      <p>{latency ?? "N/A"} ms</p>
     </div>
   );
 };
