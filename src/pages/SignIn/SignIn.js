@@ -19,7 +19,10 @@ const SignIn = () => {
 
   useEffect(() => {
     try {
-      Auth.currentAuthenticatedUser().then(() => setRedirect(true));
+      Auth.currentAuthenticatedUser().then((user) => {
+        setUsername(user.username);
+        setRedirect(true);
+      });
     } catch (err) {
       // Do nothing
     }
@@ -42,7 +45,7 @@ const SignIn = () => {
     [username, password, loading]
   );
 
-  if (redirect) return <Redirect to="/room/123" />;
+  if (redirect) return <Redirect to={`/room/${username}`} />;
 
   return (
     <div className="access sign-in">
