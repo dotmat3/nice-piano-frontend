@@ -60,10 +60,13 @@ export const formatTime = (date) => {
 
 export const generateColor = (str) => {
   let hash = 0;
-  for (let i = 0; i < str.length; i++)
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < str.length; i++) {
+    const character = str.charCodeAt(i);
+    hash = (hash << 5) - hash + character;
+    hash = hash & hash;
+  }
 
-  const c = (hash & 0x00ffffff).toString(16).toUpperCase();
+  const degree = Math.abs(hash) % 361;
 
-  return "00000".substring(0, 6 - c.length) + c;
+  return [degree, 70, 50];
 };

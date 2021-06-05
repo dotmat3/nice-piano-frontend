@@ -5,15 +5,17 @@ import { generateColor } from "../../utils";
 import "./UserProfile.scss";
 
 const UserProfile = ({ username, ...props }) => {
-  const color = useMemo(
-    () => (username ? "#" + generateColor(username) : "var(--primary)"),
-    [username]
-  );
+  const color = useMemo(() => {
+    if (!username) return "var(--primary)";
+
+    const [h, s, l] = generateColor(username);
+    return `hsl(${h}, ${s}%, ${l}%)`;
+  }, [username]);
 
   return (
     <div
       {...props}
-      className={"user-profile " + props.className}
+      className={"user-profile " + (props.className ? props.className : "")}
       style={{ backgroundColor: color, ...props.style }}
     >
       {username && <p>{username[0]}</p>}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 
 import { BASES } from "../../constants";
 import { getNoteFromMidiNumber, getMidiNumberFromNote } from "../../utils";
@@ -37,11 +37,13 @@ const PianoOctave = ({
       "The octave " + number + " doesn't exists in a piano: valid range [0:8]"
     );
 
-  let notes = Object.keys(BASES);
+  const notes = useMemo(() => Object.keys(BASES), []);
 
   const isNoteActive = (note) => {
     const midi = getMidiNumberFromNote(note);
-    const res = Object.keys(activeNotes).includes(midi.toString());
+    const res = Object.keys(activeNotes).find((index) =>
+      index.startsWith(midi.toString())
+    );
     return res;
   };
 
