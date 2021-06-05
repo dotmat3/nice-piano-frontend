@@ -1,0 +1,20 @@
+.alert {
+  color: var(--primary);
+  font-weight: bold;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+
+  span.alert-error {
+    color: rgb(156, 13, 13);
+  }
+
+  svg {
+    margin: 0 10px;
+  }
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}

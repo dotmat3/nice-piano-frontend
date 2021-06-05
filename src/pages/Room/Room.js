@@ -4,6 +4,7 @@ import { Redirect, useParams } from "react-router";
 import socketio from "socket.io-client";
 import { Piano as TonePiano } from "@tonejs/piano";
 import { Auth } from "aws-amplify";
+import { useAlert } from "react-alert";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShare } from "@fortawesome/free-solid-svg-icons";
@@ -85,6 +86,7 @@ const ProtectedRoom = () => {
 
 const Room = ({ username }) => {
   const roomId = useParams().id;
+  const alert = useAlert();
 
   const [showSettingsSideBar, setShowSettingsSideBar] = useState(false);
   const [showRecordingsSideBar, setShowRecordingsSideBar] = useState(false);
@@ -248,7 +250,10 @@ const Room = ({ username }) => {
       setSocket(ws);
       setReady((prev) => prev + 1);
     });
-  }, [roomId, username]);
+    ws.once("connect_error", () =>
+      alert.error("Connection with the websocket failed", { timeout: 0 })
+    );
+  }, [roomId, username, alert]);
 
   useEffect(() => {
     console.debug("Loading piano sounds...");

@@ -12,11 +12,21 @@ import awsConfig from "../../auth";
 
 Auth.configure(awsConfig);
 
+import { transitions, positions, Provider as AlertProvider } from "react-alert";
+import AlertTemplate from "../../components/Alert";
+
 import "./App.scss";
+
+const alertOptions = {
+  positions: positions.MIDDLE,
+  timeout: 5000,
+  offset: "30px",
+  transitions: transitions.SCALE,
+};
 
 const App = () => {
   return (
-    <>
+    <AlertProvider template={AlertTemplate} {...alertOptions}>
       <Router>
         <Switch>
           <Route path="/" exact component={Home} />
@@ -26,7 +36,7 @@ const App = () => {
           <Route path="*" component={NotFound} />
         </Switch>
       </Router>
-    </>
+    </AlertProvider>
   );
 };
 
