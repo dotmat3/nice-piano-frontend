@@ -128,7 +128,7 @@ const Room = ({ username }) => {
         ? `hsl(${h}, 40%, ${l}%)`
         : `hsl(${h}, ${s}%, ${l}%)`;
 
-      const created = Date.now();
+      const created = performance.now();
       setNotes((prev) => ({
         activeNotes: { ...prev.activeNotes, [pitch + "_" + user]: { created } },
         drawedNotes: {
@@ -144,8 +144,8 @@ const Room = ({ username }) => {
 
       if (isRecording) {
         setCurrentRecording((prev) => {
-          const startTime = prev.startTime ? prev.startTime : Date.now();
-          const time = Date.now() - startTime;
+          const startTime = prev.startTime ? prev.startTime : performance.now();
+          const time = performance.now() - startTime;
           const notes = [
             ...prev.notes,
             { type: "note_on", pitch, velocity, time },
@@ -173,7 +173,7 @@ const Room = ({ username }) => {
         if (index in newActiveNotes) {
           const { created } = newActiveNotes[index];
 
-          newDrawedNotes[pitch + "_" + created].ended = Date.now();
+          newDrawedNotes[pitch + "_" + created].ended = performance.now();
 
           delete newActiveNotes[index];
         }
@@ -186,7 +186,7 @@ const Room = ({ username }) => {
 
       if (isRecording) {
         setCurrentRecording((prev) => {
-          const time = Date.now() - prev.startTime;
+          const time = performance.now() - prev.startTime;
           return {
             ...prev,
             notes: [
@@ -226,6 +226,7 @@ const Room = ({ username }) => {
     [transposition, instrument, playNote, stopNote, username]
   );
 
+  // Handle socket events
   useEffect(() => {
     console.debug("Connecting to websocket...");
     const address = process.env.REACT_APP_SOCKET_ADDRESS;
@@ -260,6 +261,7 @@ const Room = ({ username }) => {
     );
   }, [roomId, username, alert]);
 
+  // Handle instrument loading
   useEffect(() => {
     console.debug("Loading piano sounds...");
     const piano = new TonePiano({ velocities: 5 });
@@ -271,6 +273,7 @@ const Room = ({ username }) => {
     });
   }, []);
 
+  // Handle MIDI access
   useEffect(() => {
     console.debug("Requesting MIDI access...");
     navigator.requestMIDIAccess().then((access) => {
@@ -288,6 +291,7 @@ const Room = ({ username }) => {
     });
   }, []);
 
+  // Handle Socket incoming events
   useEffect(() => {
     if (!socket || !instrument) return;
 
@@ -304,6 +308,7 @@ const Room = ({ username }) => {
     };
   }, [socket, instrument, playNote, stopNote]);
 
+  // Handle MIDI messages
   useEffect(() => {
     if (!midiAccess || !midiInput || !instrument || !socket) return;
 
@@ -340,25 +345,22 @@ const Room = ({ username }) => {
     handleMidiMessage,
   ]);
 
-  // const generateRandomNotes = useCallback(
-  //   (n) => {
-  //     let lastTime = 0;
-  //     for (let i = 0; i < n; i++) {
-  //       const time = lastTime + Math.random() * 500;
-  //       const pitch = (i % 119) + 12;
-  //       setTimeout(() => playNote(pitch, 0.5), time);
-  //       setTimeout(() => stopNote(pitch), time + 100);
-  //       lastTime = time + 100;
-  //     }
-  //   },
-  //   [playNote, stopNote]
-  // );
+  // Random notes
+  // const timerRef = useRef(null);
+  // const generateRandomNote = useCallback(() => {
+  //   const pitch = Math.floor(21 + Math.random() * (108 - 21));
+  //   playNote(pitch, 0.5, username);
+  //   setTimeout(() => stopNote(pitch, username), Math.random() * 50);
+  // }, [playNote, stopNote, username]);
 
   // useEffect(() => {
   //   if (!instrument) return;
 
-  //   setTimeout(() => generateRandomNotes(1000), 1000);
-  // }, [instrument]);
+  //   timerRef.current = setInterval(() => generateRandomNote(), 50);
+  //   return () => {
+  //     clearInterval(timerRef.current);
+  //   };
+  // }, [instrument, generateRandomNote]);
 
   const handleRemoveNote = useCallback((index) => {
     setNotes((prev) => {
@@ -374,11 +376,11 @@ const Room = ({ username }) => {
 
     setIsPlayingRecording(true);
     const track = currentRecording.notes;
-    const beginTime = Date.now();
+    const beginTime = performance.now();
 
     const timers = [];
     for (const event of track) {
-      const now = Date.now();
+      const now = performance.now();
       const { type, pitch, velocity, time } = event;
       const timeout = beginTime + time - now;
 
@@ -397,7 +399,7 @@ const Room = ({ username }) => {
       // Handle loop or stop
       if (looping) onPlayRecording();
       else setIsPlayingRecording(false);
-    }, beginTime + duration - Date.now());
+    }, beginTime + duration - performance.now());
 
     setTimers((prev) => [...prev, lastTimer]);
   }, [currentRecording, looping, playNote, stopNote, username]);
@@ -411,7 +413,7 @@ const Room = ({ username }) => {
   }, [timers, notes, stopNote, username]);
 
   const onStopRecording = useCallback(() => {
-    setCurrentRecording((prev) => ({ ...prev, endTime: Date.now() }));
+    setCurrentRecording((prev) => ({ ...prev, endTime: performance.now() }));
     setIsRecording(false);
   }, []);
 
@@ -424,6 +426,16 @@ const Room = ({ username }) => {
       notes: [],
     });
   }, []);
+
+  const handlePlayNote = useCallback(
+    (pitch) => playNote(pitch, 0.5, username),
+    [playNote, username]
+  );
+
+  const handleStopNote = useCallback(
+    (pitch) => stopNote(pitch, username),
+    [stopNote, username]
+  );
 
   if (ready < 3) return <Loading progress={Math.floor((ready * 100) / 3)} />;
 
@@ -456,13 +468,15 @@ const Room = ({ username }) => {
         <PianoWaterfall
           drawedNotes={notes.drawedNotes}
           removeNote={handleRemoveNote}
+          startPitch={21}
+          endPitch={108}
         />
         <Piano
-          octaves={9}
+          startPitch={21}
+          endPitch={108}
           activeNotes={notes.activeNotes}
-          onPlayNote={(pitch, velocity) => playNote(pitch, velocity, username)}
-          onStopNote={(pitch) => stopNote(pitch, username)}
-          hideNotes={hideNotes}
+          onPlayNote={handlePlayNote}
+          onStopNote={handleStopNote}
         />
       </main>
       <PrimaryBGSVG className="bg" />

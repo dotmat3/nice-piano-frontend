@@ -70,3 +70,7 @@ export const generateColor = (str) => {
 
   return [degree, 70, 50];
 };
+
+export const isFlat = (pitch) => {
+  return [1, 3, 6, 8, 10].includes((12 + (pitch - 21 - 3)) % 12);
+};

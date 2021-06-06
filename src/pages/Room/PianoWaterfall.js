@@ -1,12 +1,22 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useMemo,
+  useState,
+} from "react";
 
-import { BASES } from "../../constants";
-import { getNoteFromMidiNumber } from "../../utils";
+import { isFlat } from "../../utils";
 
 import "./PianoWaterfall.scss";
 
 const SLOW_FACTOR = 0.2;
-const KEYBOARD_KEYS = 9 * 7;
+const NOTE_WIDTH = 30;
+
+// FPS variables
+let lastTime = null;
+let lastShown = 0;
+let lastDelta = 0;
 
 const drawNote = (ctx, x, y, height, width, color) => {
   ctx.strokeStyle = color;
@@ -18,41 +28,57 @@ const drawNote = (ctx, x, y, height, width, color) => {
   ctx.stroke();
 };
 
-const PianoWaterfall = ({ drawedNotes, removeNote }) => {
+// Pre-compute map pitch -> n. white keys before
+const pitchMapping = (() => {
+  const mapping = {};
+  let count = 0;
+  for (let pitch = 21; pitch <= 108; pitch++) {
+    mapping[pitch] = count;
+    if (!isFlat(pitch)) count++;
+  }
+  return mapping;
+})();
+
+const PianoWaterfall = ({ drawedNotes, removeNote, startPitch, endPitch }) => {
   const canvasRef = useRef(null);
   const notesRef = useRef(null);
   const animationFrameHandle = useRef(null);
+  const [showFPS, setShowFPS] = useState(false);
+
+  const numberWhiteKeys = useMemo(() => {
+    let count = 0;
+    for (let pitch = startPitch; pitch <= endPitch; pitch++)
+      if (!isFlat(pitch)) count++;
+    return count;
+  }, [startPitch, endPitch]);
 
   notesRef.current = drawedNotes;
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     for (const [index, note] of Object.entries(notesRef.current)) {
-      // pitch : 107 = x : offsetWidth
-      const noteStr = getNoteFromMidiNumber(note.pitch);
-      let pitch = parseInt(noteStr.substr(noteStr.length - 1, 1)) * 7;
-      pitch += Object.keys(BASES).indexOf(noteStr.substr(0, 1));
+      if (note.pitch < startPitch || note.pitch > endPitch) continue;
 
-      const noteWidth = canvas.offsetWidth / (9 * 7);
+      const nPrevWhiteNotes =
+        pitchMapping[note.pitch] - pitchMapping[startPitch];
 
-      let x;
-      if (noteStr.includes("b"))
-        x = ((pitch - 1) * canvas.offsetWidth) / KEYBOARD_KEYS + noteWidth / 2;
-      else x = (pitch * canvas.offsetWidth) / KEYBOARD_KEYS;
+      const flat = isFlat(note.pitch);
 
-      const now = Date.now();
+      let x = nPrevWhiteNotes * NOTE_WIDTH;
+      if (flat) x -= NOTE_WIDTH / 2;
+
+      const now = performance.now();
       const millis = (now - note.created) * SLOW_FACTOR;
-      const y = canvas.offsetHeight - millis;
+      const y = canvas.height - millis;
 
       const ended = note.ended ? note.ended : now;
       const end_millis = (now - ended) * SLOW_FACTOR;
-      const end_y = canvas.offsetHeight - end_millis;
+      const end_y = canvas.height - end_millis;
 
       const height = end_y - y;
 
@@ -63,28 +89,42 @@ const PianoWaterfall = ({ drawedNotes, removeNote }) => {
         x,
         y,
         height,
-        noteStr.includes("b") ? noteWidth - 4 : noteWidth,
+        flat ? NOTE_WIDTH - 10 : NOTE_WIDTH,
         note.color
       );
     }
 
-    window.requestAnimationFrame(draw);
-  }, [removeNote]);
+    if (showFPS) {
+      const now = performance.now();
+      if (lastTime) {
+        if (now - lastShown > 100) {
+          lastDelta = Math.ceil(1000 / (now - lastTime));
+          lastShown = now;
+        }
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "magenta";
+        ctx.fillText(lastDelta, 10, canvas.height - 10);
+      }
+      lastTime = now;
+    }
+
+    animationFrameHandle.current = window.requestAnimationFrame(draw);
+  }, [removeNote, startPitch, endPitch, showFPS]);
 
   useEffect(() => {
     const resizeCanvas = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
+      canvas.width = numberWhiteKeys * NOTE_WIDTH;
+      canvas.height = canvas.parentElement.offsetHeight;
     };
 
     window.onresize = resizeCanvas;
     resizeCanvas();
 
     return () => (window.onresize = null);
-  }, [canvasRef]);
+  }, [numberWhiteKeys]);
 
   useEffect(() => {
     animationFrameHandle.current = window.requestAnimationFrame(draw);
@@ -93,6 +133,18 @@ const PianoWaterfall = ({ drawedNotes, removeNote }) => {
       window.cancelAnimationFrame(animationFrameHandle.current);
     };
   }, [draw]);
+
+  // Show/Hide FPS
+  useEffect(() => {
+    const toggleFPS = (e) => {
+      if (e.key == "F") setShowFPS((fps) => !fps);
+    };
+
+    document.addEventListener("keydown", toggleFPS);
+    return () => {
+      document.removeEventListener("keydown", toggleFPS);
+    };
+  }, []);
 
   return (
     <div className="piano-waterfall">
