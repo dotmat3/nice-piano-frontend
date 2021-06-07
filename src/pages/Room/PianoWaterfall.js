@@ -1,32 +1,19 @@
 import React, {
   useCallback,
   useEffect,
-  useRef,
   useMemo,
+  useRef,
   useState,
 } from "react";
-
 import { isFlat } from "../../utils";
+import * as PIXI from "pixi.js";
 
 import "./PianoWaterfall.scss";
 
-const SLOW_FACTOR = 0.2;
+const NOTE_SPEED = 2;
 const NOTE_WIDTH = 30;
-
-// FPS variables
-let lastTime = null;
-let lastShown = 0;
-let lastDelta = 0;
-
-const drawNote = (ctx, x, y, height, width, color) => {
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  ctx.moveTo(x + width / 2, y);
-  ctx.lineTo(x + width / 2, y + height);
-  ctx.stroke();
-};
+const NOTE_ROUNDNESS = 10;
+const NOTE_INITIAL_HEIGHT = 10;
 
 // Pre-compute map pitch -> n. white keys before
 const pitchMapping = (() => {
@@ -40,10 +27,10 @@ const pitchMapping = (() => {
 })();
 
 const PianoWaterfall = ({ drawedNotes, removeNote, startPitch, endPitch }) => {
-  const canvasRef = useRef(null);
-  const notesRef = useRef(null);
-  const animationFrameHandle = useRef(null);
-  const [showFPS, setShowFPS] = useState(false);
+  const [app, setApp] = useState();
+  const parentRef = useRef();
+  const notesRef = useRef();
+  notesRef.current = drawedNotes;
 
   const numberWhiteKeys = useMemo(() => {
     let count = 0;
@@ -52,105 +39,84 @@ const PianoWaterfall = ({ drawedNotes, removeNote, startPitch, endPitch }) => {
     return count;
   }, [startPitch, endPitch]);
 
-  notesRef.current = drawedNotes;
+  // Resize PIXI
+  useEffect(() => {
+    if (!app) return;
+    const width = numberWhiteKeys * NOTE_WIDTH;
+    const height = parentRef.current.offsetHeight;
+    app.renderer.resize(width, height);
+  }, [numberWhiteKeys, app]);
 
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+  const updatePixi = useCallback(
+    (delta) => {
+      for (const [index, note] of Object.entries(notesRef.current)) {
+        if (note.pitch < startPitch || note.pitch > endPitch) continue;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const flat = isFlat(note.pitch);
 
-    for (const [index, note] of Object.entries(notesRef.current)) {
-      if (note.pitch < startPitch || note.pitch > endPitch) continue;
+        // Note just created
+        if (!note.entity) {
+          note.entity = new PIXI.Graphics();
+          const nPrevWhiteNotes =
+            pitchMapping[note.pitch] - pitchMapping[startPitch];
 
-      const nPrevWhiteNotes =
-        pitchMapping[note.pitch] - pitchMapping[startPitch];
-
-      const flat = isFlat(note.pitch);
-
-      let x = nPrevWhiteNotes * NOTE_WIDTH;
-      if (flat) x -= NOTE_WIDTH / 2;
-
-      const now = performance.now();
-      const millis = (now - note.created) * SLOW_FACTOR;
-      const y = canvas.height - millis;
-
-      const ended = note.ended ? note.ended : now;
-      const end_millis = (now - ended) * SLOW_FACTOR;
-      const end_y = canvas.height - end_millis;
-
-      const height = end_y - y;
-
-      if (y + height < 0) removeNote(index);
-
-      drawNote(
-        ctx,
-        x,
-        y,
-        height,
-        flat ? NOTE_WIDTH - 10 : NOTE_WIDTH,
-        note.color
-      );
-    }
-
-    if (showFPS) {
-      const now = performance.now();
-      if (lastTime) {
-        if (now - lastShown > 100) {
-          lastDelta = Math.ceil(1000 / (now - lastTime));
-          lastShown = now;
+          let x = nPrevWhiteNotes * NOTE_WIDTH;
+          if (flat) x -= NOTE_WIDTH / 2;
+          note.entity.x = x;
+          note.entity.y = app.renderer.height;
+          note.entity.lineHeight = NOTE_INITIAL_HEIGHT;
+          app.stage.addChild(note.entity);
         }
-        ctx.font = "20px Arial";
-        ctx.fillStyle = "magenta";
-        ctx.fillText(lastDelta, 10, canvas.height - 10);
+
+        note.entity.clear();
+
+        const width = flat ? NOTE_WIDTH - 10 : NOTE_WIDTH;
+
+        note.entity.y -= delta * NOTE_SPEED;
+        if (!note.ended) note.entity.lineHeight += delta * NOTE_SPEED;
+        note.entity.beginFill(note.color);
+        note.entity.drawRoundedRect(
+          0,
+          0,
+          width,
+          note.entity.lineHeight,
+          NOTE_ROUNDNESS
+        );
+        note.entity.endFill();
+
+        if (note.entity.y + note.entity.height < 0) removeNote(index);
       }
-      lastTime = now;
-    }
+    },
+    [startPitch, endPitch, removeNote, app]
+  );
 
-    animationFrameHandle.current = window.requestAnimationFrame(draw);
-  }, [removeNote, startPitch, endPitch, showFPS]);
-
+  // Setup and mount PIXI
   useEffect(() => {
-    const resizeCanvas = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
+    const parent = parentRef.current;
+    const app = new PIXI.Application({
+      backgroundAlpha: 0,
+      antialias: true,
+    });
+    parent.appendChild(app.view);
 
-      canvas.width = numberWhiteKeys * NOTE_WIDTH;
-      canvas.height = canvas.parentElement.offsetHeight;
-    };
-
-    window.onresize = resizeCanvas;
-    resizeCanvas();
-
-    return () => (window.onresize = null);
-  }, [numberWhiteKeys]);
-
-  useEffect(() => {
-    animationFrameHandle.current = window.requestAnimationFrame(draw);
-
+    setApp(app);
     return () => {
-      window.cancelAnimationFrame(animationFrameHandle.current);
-    };
-  }, [draw]);
-
-  // Show/Hide FPS
-  useEffect(() => {
-    const toggleFPS = (e) => {
-      if (e.key == "F") setShowFPS((fps) => !fps);
-    };
-
-    document.addEventListener("keydown", toggleFPS);
-    return () => {
-      document.removeEventListener("keydown", toggleFPS);
+      parent.removeChild(app.view);
     };
   }, []);
 
-  return (
-    <div className="piano-waterfall">
-      <canvas ref={canvasRef} />
-    </div>
-  );
+  // Start PIXI loop
+  useEffect(() => {
+    if (!app) return;
+    const updatePixiLambda = (delta) => updatePixi(delta);
+    app.ticker.add(updatePixiLambda);
+
+    return () => {
+      app.ticker.remove(updatePixiLambda);
+    };
+  }, [app, updatePixi]);
+
+  return <div className="piano-waterfall" ref={parentRef}></div>;
 };
 
 export default PianoWaterfall;

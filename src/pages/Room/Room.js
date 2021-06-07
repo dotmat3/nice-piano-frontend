@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Redirect, useParams } from "react-router";
 
 import socketio from "socket.io-client";
@@ -26,6 +26,7 @@ import {
   generateColor,
   getNoteFromMidiNumber,
   parseMidiMessage,
+  hslToHex,
 } from "../../utils";
 
 import "./Room.scss";
@@ -91,8 +92,8 @@ const Room = ({ username }) => {
 
       const [h, s, l] = generateColor(user);
       const color = noteStr.includes("b")
-        ? `hsl(${h}, 40%, ${l}%)`
-        : `hsl(${h}, ${s}%, ${l}%)`;
+        ? hslToHex(h, 40, l)
+        : hslToHex(h, s, l);
 
       const created = performance.now();
       setNotes((prev) => ({
