@@ -23,11 +23,14 @@ const RecordingsSideBar = ({ recordings, onRecordingSelected, onExit }) => {
             <Recording
               key={index}
               name={recording.name}
-              date={recording.startTime}
-              duration={recording.endTime - recording.startTime}
+              date={recording.recordingTime}
+              duration={recording.endTime - recording.recordingTime}
               onClick={() => onRecordingSelected(recording)}
             />
           ))}
+        {recordings && recordings.length == 0 && (
+          <h3>No recordings available yet</h3>
+        )}
       </div>
       <div className="overlay" onClick={onExit}></div>
     </>

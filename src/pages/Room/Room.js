@@ -31,40 +31,6 @@ import {
 import "./Room.scss";
 import "./SideBar.scss";
 
-const TEST_RECORDINGS = [
-  {
-    name: "Sample 1",
-    startTime: Date.now(),
-    endTime: Date.now() + 100,
-    notes: [
-      { type: "note_on", pitch: 42, velocity: 0.5, time: 0 },
-      { type: "note_off", pitch: 42, time: 100 },
-    ],
-  },
-  {
-    name: "Sample 2",
-    startTime: Date.now(),
-    endTime: Date.now() + 200,
-    notes: [
-      { type: "note_on", pitch: 42, velocity: 0.5, time: 0 },
-      { type: "note_off", pitch: 42, time: 200 },
-    ],
-  },
-  {
-    name: "Sample 3",
-    startTime: Date.now(),
-    endTime: Date.now() + 300,
-    notes: [
-      { type: "note_on", pitch: 42, velocity: 0.5, time: 0 },
-      { type: "note_off", pitch: 42, time: 100 },
-      { type: "note_on", pitch: 42, velocity: 0.5, time: 100 },
-      { type: "note_off", pitch: 42, time: 200 },
-      { type: "note_on", pitch: 42, velocity: 0.5, time: 200 },
-      { type: "note_off", pitch: 42, time: 300 },
-    ],
-  },
-];
-
 const ProtectedRoom = () => {
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState(null);
@@ -110,7 +76,7 @@ const Room = ({ username }) => {
   const [notes, setNotes] = useState({ activeNotes: {}, drawedNotes: {} });
   const [users, setUsers] = useState({});
 
-  const [recordings] = useState(TEST_RECORDINGS);
+  const [recordings, setRecordings] = useState([]);
   const [currentRecording, setCurrentRecording] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isPlayingRecording, setIsPlayingRecording] = useState(false);
@@ -144,13 +110,13 @@ const Room = ({ username }) => {
 
       if (isRecording) {
         setCurrentRecording((prev) => {
-          const startTime = prev.startTime ? prev.startTime : performance.now();
-          const time = performance.now() - startTime;
+          const recordingTime = prev.recordingTime ?? Date.now();
+          const time = Date.now() - recordingTime;
           const notes = [
             ...prev.notes,
             { type: "note_on", pitch, velocity, time },
           ];
-          return { ...prev, startTime, notes };
+          return { ...prev, recordingTime, notes };
         });
       }
 
@@ -186,7 +152,7 @@ const Room = ({ username }) => {
 
       if (isRecording) {
         setCurrentRecording((prev) => {
-          const time = performance.now() - prev.startTime;
+          const time = Date.now() - prev.recordingTime;
           return {
             ...prev,
             notes: [
@@ -291,6 +257,14 @@ const Room = ({ username }) => {
     });
   }, []);
 
+  // Get user recordings
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.emit("getRecordings");
+    socket.once("recordingsList", setRecordings);
+  }, [socket]);
+
   // Handle Socket incoming events
   useEffect(() => {
     if (!socket || !instrument) return;
@@ -376,11 +350,11 @@ const Room = ({ username }) => {
 
     setIsPlayingRecording(true);
     const track = currentRecording.notes;
-    const beginTime = performance.now();
+    const beginTime = Date.now();
 
     const timers = [];
     for (const event of track) {
-      const now = performance.now();
+      const now = Date.now();
       const { type, pitch, velocity, time } = event;
       const timeout = beginTime + time - now;
 
@@ -394,12 +368,12 @@ const Room = ({ username }) => {
 
     setTimers((prev) => [...prev, ...timers]);
 
-    const duration = currentRecording.endTime - currentRecording.startTime;
+    const duration = currentRecording.endTime - currentRecording.recordingTime;
     const lastTimer = setTimeout(() => {
       // Handle loop or stop
       if (looping) onPlayRecording();
       else setIsPlayingRecording(false);
-    }, beginTime + duration - performance.now());
+    }, beginTime + duration - Date.now());
 
     setTimers((prev) => [...prev, lastTimer]);
   }, [currentRecording, looping, playNote, stopNote, username]);
@@ -413,15 +387,26 @@ const Room = ({ username }) => {
   }, [timers, notes, stopNote, username]);
 
   const onStopRecording = useCallback(() => {
-    setCurrentRecording((prev) => ({ ...prev, endTime: performance.now() }));
+    const endTime = Date.now();
+    const newRecording = { ...currentRecording, endTime };
+    setCurrentRecording(newRecording);
     setIsRecording(false);
-  }, []);
+    if (socket) {
+      console.debug("Sending recording to the server");
+      socket.emit("saveRecording", newRecording);
+      socket.once("recordingSaved", () => {
+        setRecordings((prev) => [...prev, newRecording]);
+        alert.success("Recording saved with success");
+      });
+      socket.once("recordingSaveError", (msg) => alert.error(msg));
+    }
+  }, [socket, currentRecording, alert]);
 
   const onStartRecording = useCallback(() => {
     setIsRecording(true);
     setCurrentRecording({
       name: "New Sample",
-      startTime: null,
+      recordingTime: null,
       endTime: null,
       notes: [],
     });
