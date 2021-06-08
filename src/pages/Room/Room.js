@@ -417,6 +417,25 @@ const Room = ({ username }) => {
     [stopNote, username]
   );
 
+  const handleRecordingNameUpdate = useCallback(() => {
+    if (!socket) return;
+
+    const { name, recordingTime } = currentRecording;
+    console.debug("Updating recording name");
+    socket.emit("updateRecordingName", { name, recordingTime });
+    socket.once("recordingUpdated", () => {
+      alert.success("Name updated with success");
+      setRecordings((prev) =>
+        prev.map((recording) => {
+          if (recording.recordingTime === recordingTime)
+            return { ...recording, name };
+          return recording;
+        })
+      );
+    });
+    socket.once("recordingUpdateError", (msg) => alert.error(msg));
+  }, [socket, currentRecording, alert]);
+
   if (ready < 3) return <Loading progress={Math.floor((ready * 100) / 3)} />;
 
   return (
@@ -434,6 +453,10 @@ const Room = ({ username }) => {
         onOpenRecordings={() => setShowRecordingsSideBar(true)}
         onOpenUserInfo={() => setShowUserSideBar(true)}
         currentRecording={currentRecording}
+        onChangeName={(name) =>
+          setCurrentRecording((prev) => ({ ...prev, name }))
+        }
+        onUpdateName={handleRecordingNameUpdate}
         username={username}
         users={users}
       />

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -29,9 +29,31 @@ const RoomHeader = ({
   onOpenRecordings,
   onOpenUserInfo,
   currentRecording,
+  onChangeName,
+  onUpdateName,
   users,
   username,
 }) => {
+  const inputText = isRecording
+    ? "Recording..."
+    : currentRecording
+    ? currentRecording.name
+    : "Start to record...";
+
+  const disabled = isRecording || !currentRecording;
+
+  const handleChangeRecordingName = useCallback(
+    (e) => onChangeName(e.currentTarget.value),
+    [onChangeName]
+  );
+
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (e.key === "Enter") onUpdateName();
+    },
+    [onUpdateName]
+  );
+
   return (
     <header>
       <Logo />
@@ -45,13 +67,13 @@ const RoomHeader = ({
               isPlayingRecording ? onResetRecording() : onPlayRecording()
             }
           />
-          <p>
-            {isRecording
-              ? "Recording..."
-              : currentRecording
-              ? currentRecording.name
-              : "Start to record..."}
-          </p>
+          <input
+            type="text"
+            value={inputText}
+            disabled={disabled}
+            onChange={handleChangeRecordingName}
+            onKeyDown={handleKeyDown}
+          />
           <FontAwesomeIcon
             icon={faList}
             color="var(--primary)"
