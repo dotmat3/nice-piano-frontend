@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Redirect, useParams } from "react-router";
 
 import socketio from "socket.io-client";
@@ -22,12 +22,7 @@ import RecordingsSideBar from "./RecordingsSideBar";
 import RoomSideBar from "./RoomSideBar";
 import UserSideBar from "./UserSideBar";
 
-import {
-  generateColor,
-  getNoteFromMidiNumber,
-  parseMidiMessage,
-  hslToHex,
-} from "../../utils";
+import { generateColor, parseMidiMessage, hslToHex, isFlat } from "../../utils";
 
 import "./Room.scss";
 import "./SideBar.scss";
@@ -87,27 +82,39 @@ const Room = ({ username }) => {
 
   const playNote = useCallback(
     (pitch, velocity, user) => {
-      const noteStr = getNoteFromMidiNumber(pitch);
-      instrument.keyDown({ note: noteStr, velocity });
+      instrument.keyDown({ midi: pitch, velocity });
 
       const [h, s, l] = generateColor(user);
-      const color = noteStr.includes("b")
-        ? hslToHex(h, 40, l)
-        : hslToHex(h, s, l);
+      const color = isFlat(pitch) ? hslToHex(h, 40, l) : hslToHex(h, s, l);
 
       const created = performance.now();
-      setNotes((prev) => ({
-        activeNotes: { ...prev.activeNotes, [pitch + "_" + user]: { created } },
-        drawedNotes: {
-          ...prev.drawedNotes,
-          [pitch + "_" + created]: {
-            pitch,
-            created,
-            color,
-            ended: null,
-          },
-        },
-      }));
+      setNotes((prev) => {
+        const index = pitch + "_" + user;
+        let newNote, newDrawedNotes;
+        if (index in prev.activeNotes) {
+          newNote = {
+            ...prev.activeNotes[index],
+            count: prev.activeNotes[index].count + 1,
+          };
+          newDrawedNotes = prev.drawedNotes;
+        } else {
+          newNote = { created, count: 1 };
+          newDrawedNotes = {
+            ...prev.drawedNotes,
+            [pitch + "_" + created]: {
+              pitch,
+              created,
+              color,
+              ended: null,
+            },
+          };
+        }
+
+        return {
+          activeNotes: { ...prev.activeNotes, [index]: newNote },
+          drawedNotes: newDrawedNotes,
+        };
+      });
 
       if (isRecording) {
         setCurrentRecording((prev) => {
@@ -128,8 +135,7 @@ const Room = ({ username }) => {
 
   const stopNote = useCallback(
     (pitch, user) => {
-      const noteStr = getNoteFromMidiNumber(pitch);
-      instrument.keyUp({ note: noteStr });
+      instrument.keyUp({ midi: pitch });
 
       setNotes((prev) => {
         let newActiveNotes = { ...prev.activeNotes },
@@ -138,11 +144,16 @@ const Room = ({ username }) => {
         const index = pitch + "_" + user;
 
         if (index in newActiveNotes) {
-          const { created } = newActiveNotes[index];
-
-          newDrawedNotes[pitch + "_" + created].ended = performance.now();
-
-          delete newActiveNotes[index];
+          const updatedNote = {
+            ...newActiveNotes[index],
+            count: newActiveNotes[index].count - 1,
+          };
+          newActiveNotes[index] = updatedNote;
+          if (newActiveNotes[index].count == 0) {
+            const { created } = newActiveNotes[index];
+            newDrawedNotes[pitch + "_" + created].ended = performance.now();
+            delete newActiveNotes[index];
+          }
         }
 
         return {
@@ -319,23 +330,6 @@ const Room = ({ username }) => {
     instrument,
     handleMidiMessage,
   ]);
-
-  // Random notes
-  // const timerRef = useRef(null);
-  // const generateRandomNote = useCallback(() => {
-  //   const pitch = Math.floor(21 + Math.random() * (108 - 21));
-  //   playNote(pitch, 0.5, username);
-  //   setTimeout(() => stopNote(pitch, username), Math.random() * 50);
-  // }, [playNote, stopNote, username]);
-
-  // useEffect(() => {
-  //   if (!instrument) return;
-
-  //   timerRef.current = setInterval(() => generateRandomNote(), 50);
-  //   return () => {
-  //     clearInterval(timerRef.current);
-  //   };
-  // }, [instrument, generateRandomNote]);
 
   const handleRemoveNote = useCallback((index) => {
     setNotes((prev) => {

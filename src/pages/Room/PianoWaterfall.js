@@ -61,10 +61,14 @@ const PianoWaterfall = ({ drawedNotes, removeNote, startPitch, endPitch }) => {
             pitchMapping[note.pitch] - pitchMapping[startPitch];
 
           let x = nPrevWhiteNotes * NOTE_WIDTH;
-          if (flat) x -= NOTE_WIDTH / 2;
+          if (flat) {
+            x -= NOTE_WIDTH / 2;
+            note.entity.zIndex = 99;
+          }
           note.entity.x = x;
           note.entity.y = app.renderer.height;
           note.entity.lineHeight = NOTE_INITIAL_HEIGHT;
+
           app.stage.addChild(note.entity);
         }
 
@@ -108,6 +112,7 @@ const PianoWaterfall = ({ drawedNotes, removeNote, startPitch, endPitch }) => {
   // Start PIXI loop
   useEffect(() => {
     if (!app) return;
+    app.stage.sortableChildren = true;
     const updatePixiLambda = (delta) => updatePixi(delta);
     app.ticker.add(updatePixiLambda);
 
