@@ -49,7 +49,10 @@ const RoomHeader = ({
 
   const handleKeyDown = useCallback(
     (e) => {
-      if (e.key === "Enter") onUpdateName();
+      if (e.key === "Enter") {
+        onUpdateName();
+        e.target.blur();
+      }
     },
     [onUpdateName]
   );

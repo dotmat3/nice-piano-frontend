@@ -37,14 +37,20 @@ const Recording = ({ name, date, duration, onDeleteRecording, ...props }) => {
     onDeleteRecording(date);
   };
 
+  const dateObject = new Date(date);
+
   return (
     <div {...props} className={"recording " + props.className}>
       <div className="recording-info">
         <div className="recording-text">
           <p>{name}</p>
           <p>
-            {new Date(date).toLocaleDateString("en-US")} |{" "}
-            {formatTime(new Date(duration))}
+            {[
+              dateObject.toLocaleDateString("en-US"),
+              dateObject.toLocaleTimeString("en-US"),
+              "|",
+              formatTime(new Date(duration)),
+            ].join(" ")}
           </p>
         </div>
         <FontAwesomeIcon

@@ -422,18 +422,24 @@ const Room = ({ username }) => {
     [stopNote, username]
   );
 
-  const handleRecordingDelete = (deleteRecordingTime) => {
-    setRecordings((prev) =>
-      prev.filter(({ recordingTime }) => recordingTime !== deleteRecordingTime)
-    );
-    socket.emit("deleteRecording", deleteRecordingTime);
-    socket.once("recordingDeleted", () => {
-      alert.success("Recording successfully deleted");
-    });
-    socket.once("recordingDeleteError", (error) => {
-      alert.error(error);
-    });
-  };
+  const handleRecordingDelete = useCallback(
+    (deleteRecordingTime) => {
+      setRecordings((prev) =>
+        prev.filter(
+          ({ recordingTime }) => recordingTime !== deleteRecordingTime
+        )
+      );
+      socket.emit("deleteRecording", deleteRecordingTime);
+      socket.once("recordingDeleted", () => {
+        setCurrentRecording(null);
+        alert.success("Recording successfully deleted");
+      });
+      socket.once("recordingDeleteError", (error) => {
+        alert.error(error);
+      });
+    },
+    [alert, socket]
+  );
 
   const handleRecordingNameUpdate = useCallback(() => {
     if (!socket) return;
