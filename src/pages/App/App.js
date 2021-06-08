@@ -18,10 +18,13 @@ import AlertTemplate from "../../components/Alert";
 import "./App.scss";
 
 const alertOptions = {
-  positions: positions.MIDDLE,
+  position: positions.TOP_CENTER,
   timeout: 5000,
-  offset: "30px",
-  transitions: transitions.SCALE,
+  offset: "130px",
+  transition: transitions.SCALE,
+  containerStyle: {
+    zIndex: 10000,
+  },
 };
 
 const App = () => {

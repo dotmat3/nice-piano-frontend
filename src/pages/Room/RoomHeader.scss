@@ -20,13 +20,21 @@
       margin: 0 8px;
     }
 
-    p {
+    input {
+      font-size: 20px;
       background-color: var(--tertiary);
       padding: 5px 10px;
       margin: 0 5px;
       color: white;
       border-radius: 10px;
       min-width: 200px;
+      width: auto;
+      border: none;
+      height: 100%;
+
+      &::placeholder {
+        color: white;
+      }
     }
   }
 
