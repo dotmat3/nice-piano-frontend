@@ -1,16 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Link, Redirect } from "react-router-dom";
-import { useCallback, useEffect } from "react/cjs/react.development";
 
 import Header from "../../components/Header";
 
 import { ReactComponent as PrimaryBGSVG } from "./assets/bg3.svg";
+
+import { useQuery } from "../../utils";
 
 import { Auth } from "aws-amplify";
 
 import "./SignIn.scss";
 
 const SignIn = () => {
+  const query = useQuery();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
@@ -45,7 +48,8 @@ const SignIn = () => {
     [username, password, loading]
   );
 
-  if (redirect) return <Redirect to={`/room/${username}`} />;
+  if (redirect)
+    return <Redirect to={`/room/${query.get("room") ?? username}`} />;
 
   return (
     <div className="access sign-in">
@@ -71,7 +75,16 @@ const SignIn = () => {
                 onChange={(e) => setPassword(e.currentTarget.value)}
               />
               <p>
-                Not registered yet? <Link to="signup">Sign up</Link>
+                Not registered yet?{" "}
+                <Link
+                  to={
+                    query.has("room")
+                      ? `/signup?room=${query.get("room")}`
+                      : "/signup"
+                  }
+                >
+                  Sign up
+                </Link>
               </p>
               <button>{loading ? "Validating..." : "Login"}</button>
             </form>

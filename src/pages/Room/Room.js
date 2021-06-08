@@ -28,6 +28,8 @@ import "./Room.scss";
 import "./SideBar.scss";
 
 const ProtectedRoom = () => {
+  const roomId = useParams().id;
+
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState(null);
 
@@ -47,7 +49,11 @@ const ProtectedRoom = () => {
 
   if (loading) return <Loading />;
 
-  return username ? <Room username={username} /> : <Redirect to="/signin" />;
+  return username ? (
+    <Room username={username} />
+  ) : (
+    <Redirect to={`/signin?room=${roomId}`} />
+  );
 };
 
 const Room = ({ username }) => {

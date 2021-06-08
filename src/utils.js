@@ -1,5 +1,7 @@
 import { CHROMATIC, BASES } from "./constants";
 
+import { useLocation } from "react-router-dom";
+
 export const split = (str) =>
   /^([a-gA-G])(#{1,}|b{1,}|x{1,}|)(-?\d*)(\/\d+|)\s*(.*)\s*$/.exec(str);
 
@@ -87,3 +89,5 @@ export const hslToHex = (h, s, l) => {
   };
   return parseInt(`${f(0)}${f(8)}${f(4)}`, 16);
 };
+
+export const useQuery = () => new URLSearchParams(useLocation().search);

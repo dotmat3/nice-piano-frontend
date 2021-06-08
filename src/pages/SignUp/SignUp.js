@@ -1,13 +1,18 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import { Link, Redirect } from "react-router-dom";
 
 import Header from "../../components/Header";
 
 import { ReactComponent as PrimaryBGSVG } from "./assets/bg3.svg";
 
+import { useQuery } from "../../utils";
+
 import { Auth } from "aws-amplify";
 
 const SignUp = () => {
+  const query = useQuery();
+  console.log(query.get("room"));
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -36,7 +41,12 @@ const SignUp = () => {
     [username, password, confirmPassword]
   );
 
-  if (redirect) return <Redirect to="/signin" />;
+  const signInURL = useMemo(
+    () => (query.has("room") ? `/signin?room=${query.get("room")}` : "/signin"),
+    [query]
+  );
+
+  if (redirect) return <Redirect to={signInURL} />;
 
   return (
     <div className="access sign-up">
@@ -69,7 +79,7 @@ const SignUp = () => {
                 onChange={(e) => setConfirmPassword(e.currentTarget.value)}
               />
               <p>
-                Already registered? <Link to="signin">Sign in</Link>
+                Already registered? <Link to={signInURL}>Sign in</Link>
               </p>
               <button>Register</button>
             </form>
