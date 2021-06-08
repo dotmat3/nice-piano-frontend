@@ -376,7 +376,7 @@ const Room = ({ username }) => {
   const onResetRecording = useCallback(() => {
     timers.forEach(clearTimeout);
     Object.keys(notes.activeNotes).forEach((index) =>
-      stopNote(index.split("_")[0], username)
+      stopNote(parseInt(index.split("_")[0]), username)
     );
     setIsPlayingRecording(false);
   }, [timers, notes, stopNote, username]);
