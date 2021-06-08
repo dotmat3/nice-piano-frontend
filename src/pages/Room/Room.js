@@ -382,10 +382,15 @@ const Room = ({ username }) => {
   }, [timers, notes, stopNote, username]);
 
   const onStopRecording = useCallback(() => {
+    setIsRecording(false);
+    if (!currentRecording.recordingTime) {
+      setCurrentRecording(null);
+      return;
+    }
+
     const endTime = Date.now();
     const newRecording = { ...currentRecording, endTime };
     setCurrentRecording(newRecording);
-    setIsRecording(false);
     if (socket) {
       console.debug("Sending recording to the server");
       socket.emit("saveRecording", newRecording);
@@ -416,6 +421,19 @@ const Room = ({ username }) => {
     (pitch) => stopNote(pitch, username),
     [stopNote, username]
   );
+
+  const handleRecordingDelete = (deleteRecordingTime) => {
+    setRecordings((prev) =>
+      prev.filter(({ recordingTime }) => recordingTime !== deleteRecordingTime)
+    );
+    socket.emit("deleteRecording", deleteRecordingTime);
+    socket.once("recordingDeleted", () => {
+      alert.success("Recording successfully deleted");
+    });
+    socket.once("recordingDeleteError", (error) => {
+      alert.error(error);
+    });
+  };
 
   if (ready < 3) return <Loading progress={Math.floor((ready * 100) / 3)} />;
 
@@ -479,6 +497,7 @@ const Room = ({ username }) => {
           recordings={recordings}
           onRecordingSelected={(value) => setCurrentRecording(value)}
           onExit={() => setShowRecordingsSideBar(false)}
+          onDeleteRecording={handleRecordingDelete}
         />
       )}
       {showRoomSideBar && (
