@@ -235,7 +235,7 @@ const Room = ({ username }) => {
       setReady((prev) => prev + 1);
     });
     ws.once("connect_error", () =>
-      alert.error("Connection with the websocket failed", { timeout: 0 })
+      alert.error("Connection with the websocket failed")
     );
   }, [roomId, username, alert]);
 
