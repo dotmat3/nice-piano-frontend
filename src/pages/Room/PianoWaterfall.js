@@ -72,23 +72,27 @@ const PianoWaterfall = ({ drawedNotes, removeNote, startPitch, endPitch }) => {
           app.stage.addChild(note.entity);
         }
 
-        note.entity.clear();
-
         const width = flat ? NOTE_WIDTH - 10 : NOTE_WIDTH;
 
         note.entity.y -= delta * NOTE_SPEED;
-        if (!note.ended) note.entity.lineHeight += delta * NOTE_SPEED;
-        note.entity.beginFill(note.color);
-        note.entity.drawRoundedRect(
-          0,
-          0,
-          width,
-          note.entity.lineHeight,
-          NOTE_ROUNDNESS
-        );
-        note.entity.endFill();
+        if (!note.ended) {
+          note.entity.clear();
+          note.entity.lineHeight += delta * NOTE_SPEED;
+          note.entity.beginFill(note.color);
+          note.entity.drawRoundedRect(
+            0,
+            0,
+            width,
+            note.entity.lineHeight,
+            NOTE_ROUNDNESS
+          );
+          note.entity.endFill();
+        } else note.entity.cacheAsBitmap = true;
 
-        if (note.entity.y + note.entity.height < 0) removeNote(index);
+        if (note.entity.y + note.entity.height < 0) {
+          removeNote(index);
+          note.entity.destroy();
+        }
       }
     },
     [startPitch, endPitch, removeNote, app]
