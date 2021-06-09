@@ -44,18 +44,10 @@ const Piano = ({
     [onPlayNote, handleMouseUp]
   );
 
-  // TODO: optimize
-  const isNoteActive = (pitch) => {
-    const res = Object.keys(activeNotes).find((index) =>
-      index.startsWith(pitch)
-    );
-    return res;
-  };
-
   const createPianoKeys = () => {
     const keys = [];
     for (let pitch = startPitch; pitch <= endPitch; pitch++) {
-      const active = isNoteActive(pitch);
+      const active = pitch in activeNotes;
       const className =
         "piano-key" +
         (active ? " active" : "") +

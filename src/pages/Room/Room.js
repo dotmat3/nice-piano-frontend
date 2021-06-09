@@ -149,29 +149,28 @@ const Room = ({ username }) => {
 
       const created = performance.now();
       setNotes((prev) => {
-        const index = pitch + "_" + user;
-        let newNote, newDrawedNotes;
-        if (index in prev.activeNotes) {
-          newNote = {
-            ...prev.activeNotes[index],
-            count: prev.activeNotes[index].count + 1,
-          };
+        let newNote,
+          newDrawedNotes = { ...prev.drawedNotes },
+          newActiveNotes = JSON.parse(JSON.stringify(prev.activeNotes));
+        if (pitch in newActiveNotes && user in newActiveNotes[pitch]) {
+          newNote = { ...newActiveNotes[pitch][user] };
+          newNote.count++;
           newDrawedNotes = prev.drawedNotes;
         } else {
           newNote = { created, count: 1 };
-          newDrawedNotes = {
-            ...prev.drawedNotes,
-            [pitch + "_" + created]: {
-              pitch,
-              created,
-              color,
-              ended: null,
-            },
+          newDrawedNotes[pitch + "_" + created] = {
+            pitch,
+            created,
+            color,
+            ended: null,
           };
+          if (!(pitch in newActiveNotes)) {
+            newActiveNotes[pitch] = {};
+          }
         }
-
+        newActiveNotes[pitch][user] = newNote;
         return {
-          activeNotes: { ...prev.activeNotes, [index]: newNote },
+          activeNotes: newActiveNotes,
           drawedNotes: newDrawedNotes,
         };
       });
@@ -198,24 +197,22 @@ const Room = ({ username }) => {
       instrument.keyUp({ midi: pitch });
 
       setNotes((prev) => {
-        let newActiveNotes = { ...prev.activeNotes },
+        let newActiveNotes = JSON.parse(JSON.stringify(prev.activeNotes)),
           newDrawedNotes = { ...prev.drawedNotes };
 
-        const index = pitch + "_" + user;
-
-        if (index in newActiveNotes) {
-          const updatedNote = {
-            ...newActiveNotes[index],
-            count: newActiveNotes[index].count - 1,
-          };
-          newActiveNotes[index] = updatedNote;
-          if (newActiveNotes[index].count == 0) {
-            const { created } = newActiveNotes[index];
-            newDrawedNotes[pitch + "_" + created].ended = performance.now();
-            delete newActiveNotes[index];
+        if (pitch in newActiveNotes && user in newActiveNotes[pitch]) {
+          const newNote = { ...newActiveNotes[pitch][user] };
+          newNote.count--;
+          newActiveNotes[pitch][user] = newNote;
+          if (newNote.count === 0) {
+            newDrawedNotes[pitch + "_" + newNote.created].ended =
+              performance.now();
+            delete newActiveNotes[pitch][user];
+            if (Object.keys(newActiveNotes[pitch]).length === 0) {
+              delete newActiveNotes[pitch];
+            }
           }
         }
-
         return {
           activeNotes: newActiveNotes,
           drawedNotes: newDrawedNotes,
