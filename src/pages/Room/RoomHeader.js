@@ -58,7 +58,7 @@ const RoomHeader = ({
   );
 
   return (
-    <header>
+    <header className="room-header">
       <Logo />
       <div className="sections">
         <Section className="row recordings">

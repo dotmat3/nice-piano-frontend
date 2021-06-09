@@ -86,6 +86,60 @@ const Room = ({ username }) => {
 
   const [timers, setTimers] = useState([]);
 
+  const [startPitch, setStartPitch] = useState(21);
+  const [endPitch, setEndPitch] = useState(108);
+
+  useEffect(() => {
+    const resizePiano = () => {
+      const width = window.innerWidth;
+
+      if (width > 1650) {
+        setStartPitch(21);
+        setEndPitch(108);
+        return;
+      }
+
+      if (width > 1350) {
+        setStartPitch(36);
+        setEndPitch(108);
+        return;
+      }
+
+      if (width > 1150) {
+        setStartPitch(36);
+        setEndPitch(96);
+        return;
+      }
+
+      if (width > 950) {
+        setStartPitch(36);
+        setEndPitch(84);
+        return;
+      }
+
+      if (width > 750) {
+        setStartPitch(48);
+        setEndPitch(84);
+        return;
+      }
+
+      if (width > 550) {
+        setStartPitch(48);
+        setEndPitch(72);
+        return;
+      }
+
+      setStartPitch(60);
+      setEndPitch(72);
+      return;
+    };
+
+    resizePiano();
+    window.onresize = resizePiano;
+
+    return () => (window.onresize = null);
+  }, []);
+
   const playNote = useCallback(
     (pitch, velocity, user) => {
       instrument.keyDown({ midi: pitch, velocity });
@@ -501,12 +555,12 @@ const Room = ({ username }) => {
         <PianoWaterfall
           drawedNotes={notes.drawedNotes}
           removeNote={handleRemoveNote}
-          startPitch={21}
-          endPitch={108}
+          startPitch={startPitch}
+          endPitch={endPitch}
         />
         <Piano
-          startPitch={21}
-          endPitch={108}
+          startPitch={startPitch}
+          endPitch={endPitch}
           activeNotes={notes.activeNotes}
           onPlayNote={handlePlayNote}
           onStopNote={handleStopNote}
