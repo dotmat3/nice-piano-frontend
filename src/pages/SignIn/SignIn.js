@@ -42,6 +42,7 @@ const SignIn = () => {
         setLoading(false);
         setRedirect(true);
       } catch (error) {
+        setLoading(false);
         alert(error.message);
       }
     },
