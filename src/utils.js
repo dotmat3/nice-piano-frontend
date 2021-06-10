@@ -1,5 +1,7 @@
 import { CHROMATIC, BASES } from "./constants";
 
+import { useLocation } from "react-router-dom";
+
 export const split = (str) =>
   /^([a-gA-G])(#{1,}|b{1,}|x{1,}|)(-?\d*)(\/\d+|)\s*(.*)\s*$/.exec(str);
 
@@ -57,3 +59,35 @@ export const formatTime = (date) => {
       : date.getUTCSeconds();
   return hours + ":" + minutes + ":" + seconds;
 };
+
+export const generateColor = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const character = str.charCodeAt(i);
+    hash = (hash << 5) - hash + character;
+    hash = hash & hash;
+  }
+
+  const degree = Math.abs(hash) % 361;
+
+  return [degree, 70, 50];
+};
+
+export const isFlat = (pitch) => {
+  return [1, 3, 6, 8, 10].includes((12 + (pitch - 21 - 3)) % 12);
+};
+
+export const hslToHex = (h, s, l) => {
+  l /= 100;
+  const a = (s * Math.min(l, 1 - l)) / 100;
+  const f = (n) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color)
+      .toString(16)
+      .padStart(2, "0"); // convert to Hex and prefix "0" if needed
+  };
+  return parseInt(`${f(0)}${f(8)}${f(4)}`, 16);
+};
+
+export const useQuery = () => new URLSearchParams(useLocation().search);
