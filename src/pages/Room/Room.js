@@ -27,6 +27,8 @@ import { generateColor, parseMidiMessage, hslToHex, isFlat } from "../../utils";
 import "./Room.scss";
 import "./SideBar.scss";
 
+const drawedNotes = {};
+
 const ProtectedRoom = () => {
   const roomId = useParams().id;
 
@@ -75,7 +77,7 @@ const Room = ({ username }) => {
   const [transposition, setTransposition] = useState(0);
   const [hideNotes, setHideNotes] = useState(true);
 
-  const [notes, setNotes] = useState({ activeNotes: {}, drawedNotes: {} });
+  const [activeNotes, setActiveNotes] = useState({});
   const [users, setUsers] = useState({});
 
   const [recordings, setRecordings] = useState([]);
@@ -148,31 +150,29 @@ const Room = ({ username }) => {
       const color = isFlat(pitch) ? hslToHex(h, 40, l) : hslToHex(h, s, l);
 
       const created = performance.now();
-      setNotes((prev) => {
+      setActiveNotes((prev) => {
         let newNote,
-          newDrawedNotes = { ...prev.drawedNotes },
-          newActiveNotes = JSON.parse(JSON.stringify(prev.activeNotes));
+          newActiveNotes = JSON.parse(JSON.stringify(prev));
+
         if (pitch in newActiveNotes && user in newActiveNotes[pitch]) {
           newNote = { ...newActiveNotes[pitch][user] };
           newNote.count++;
-          newDrawedNotes = prev.drawedNotes;
         } else {
           newNote = { created, count: 1 };
-          newDrawedNotes[pitch + "_" + created] = {
+
+          drawedNotes[pitch + "_" + created] = {
             pitch,
             created,
             color,
             ended: null,
           };
+
           if (!(pitch in newActiveNotes)) {
             newActiveNotes[pitch] = {};
           }
         }
         newActiveNotes[pitch][user] = newNote;
-        return {
-          activeNotes: newActiveNotes,
-          drawedNotes: newDrawedNotes,
-        };
+        return newActiveNotes;
       });
 
       if (isRecording) {
@@ -196,16 +196,15 @@ const Room = ({ username }) => {
     (pitch, user) => {
       instrument.keyUp({ midi: pitch });
 
-      setNotes((prev) => {
-        let newActiveNotes = JSON.parse(JSON.stringify(prev.activeNotes)),
-          newDrawedNotes = { ...prev.drawedNotes };
+      setActiveNotes((prev) => {
+        let newActiveNotes = JSON.parse(JSON.stringify(prev));
 
         if (pitch in newActiveNotes && user in newActiveNotes[pitch]) {
           const newNote = { ...newActiveNotes[pitch][user] };
           newNote.count--;
           newActiveNotes[pitch][user] = newNote;
           if (newNote.count === 0) {
-            newDrawedNotes[pitch + "_" + newNote.created].ended =
+            drawedNotes[pitch + "_" + newNote.created].ended =
               performance.now();
             delete newActiveNotes[pitch][user];
             if (Object.keys(newActiveNotes[pitch]).length === 0) {
@@ -213,10 +212,7 @@ const Room = ({ username }) => {
             }
           }
         }
-        return {
-          activeNotes: newActiveNotes,
-          drawedNotes: newDrawedNotes,
-        };
+        return newActiveNotes;
       });
 
       if (isRecording) {
@@ -388,14 +384,7 @@ const Room = ({ username }) => {
     handleMidiMessage,
   ]);
 
-  const handleRemoveNote = useCallback((index) => {
-    setNotes((prev) => {
-      const newDrawedNotes = { ...prev.drawedNotes };
-      delete newDrawedNotes[index];
-
-      return { activeNotes: prev.activeNotes, drawedNotes: newDrawedNotes };
-    });
-  }, []);
+  const handleRemoveNote = (index) => delete drawedNotes[index];
 
   const onPlayRecording = useCallback(() => {
     if (!currentRecording) return;
@@ -432,11 +421,11 @@ const Room = ({ username }) => {
 
   const onResetRecording = useCallback(() => {
     timers.forEach(clearTimeout);
-    Object.keys(notes.activeNotes).forEach((index) =>
+    Object.keys(activeNotes).forEach((index) =>
       stopNote(parseInt(index.split("_")[0]), username)
     );
     setIsPlayingRecording(false);
-  }, [timers, notes, stopNote, username]);
+  }, [timers, activeNotes, stopNote, username]);
 
   const onStopRecording = useCallback(() => {
     setIsRecording(false);
@@ -550,7 +539,7 @@ const Room = ({ username }) => {
           <FontAwesomeIcon icon={faShare} color="var(--primary)" size="lg" />
         </Section>
         <PianoWaterfall
-          drawedNotes={notes.drawedNotes}
+          drawedNotes={drawedNotes}
           removeNote={handleRemoveNote}
           startPitch={startPitch}
           endPitch={endPitch}
@@ -558,7 +547,7 @@ const Room = ({ username }) => {
         <Piano
           startPitch={startPitch}
           endPitch={endPitch}
-          activeNotes={notes.activeNotes}
+          activeNotes={activeNotes}
           onPlayNote={handlePlayNote}
           onStopNote={handleStopNote}
         />
