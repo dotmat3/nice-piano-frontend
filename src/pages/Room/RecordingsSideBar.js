@@ -67,7 +67,7 @@ const Recording = ({ name, date, duration, onDeleteRecording, ...props }) => {
           cancelText="Cancel"
           onCancel={toggleAlert}
           onConfirm={onDeleteConfirm}
-        ></ConfirmationAlert>
+        />
       )}
     </div>
   );

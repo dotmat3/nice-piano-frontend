@@ -8,8 +8,8 @@ const SettingsSideBar = ({
   setMidiOutput,
   transposition,
   setTransposition,
-  hideNotes,
-  setHideNotes,
+  // hideNotes,
+  // setHideNotes,
   onExit,
 }) => {
   const handleMidiInputChange = (e) => {
@@ -45,12 +45,12 @@ const SettingsSideBar = ({
             ))}
           <option value="none">None</option>
         </select>
-        <label>Hide notes label</label>
+        {/* <label>Hide notes label</label>
         <input
           type="checkbox"
           checked={hideNotes}
           onChange={() => setHideNotes(!hideNotes)}
-        />
+        /> */}
         <label>Transpose</label>
         <input
           type="number"

@@ -75,7 +75,7 @@ const Room = ({ username }) => {
   const [midiInput, setMidiInput] = useState("None");
   const [midiOutput, setMidiOutput] = useState("None");
   const [transposition, setTransposition] = useState(0);
-  const [hideNotes, setHideNotes] = useState(true);
+  // const [hideNotes, setHideNotes] = useState(true);
 
   const [activeNotes, setActiveNotes] = useState({});
   const [users, setUsers] = useState({});
@@ -562,8 +562,8 @@ const Room = ({ username }) => {
           setMidiOutput={setMidiOutput}
           transposition={transposition}
           setTransposition={setTransposition}
-          hideNotes={hideNotes}
-          setHideNotes={setHideNotes}
+          // hideNotes={hideNotes}
+          // setHideNotes={setHideNotes}
           onExit={() => setShowSettingsSideBar(false)}
         />
       )}
