@@ -1,7 +1,15 @@
-# NicePiano Frontend
+# 🎹 NicePiano Frontend
 
-Project for the Cloud Computing course 2020/21, University of Rome "La Sapienza".
+NicePiano is an **online web application** which enables users to **play a virtual piano** together with other users, **in real time**.
 
-We would like to implement a web application which allows a user to play the piano together with multiple users in real time.
-A user will be able to connect to the web site, register an account and will be able to join a “room” which is a virtual environment where different users can meet, in order to play together. The user will then be able to connect a physical piano keyboard to the browser using the MIDI protocol and the notes played will be broadcasted to everyone in the room.
-Moreover, users will also be able to record a performance in such a way that it is stored in their account and can be played back at a later time.
+For more info, you can refer to the main repository [nice-piano](https://github.com/SkyLionx/nice-piano).
+
+## Contributors
+
+<a href="https://github.com/SkyLionx" target="_blank">
+  <img src="https://img.shields.io/badge/Profile-Fabrizio%20Rossi-green?style=for-the-badge&logo=github&labelColor=blue&color=white">
+</a>
+<br /><br />
+<a href="https://github.com/dotmat3" target="_blank">
+  <img src="https://img.shields.io/badge/Profile-Matteo%20Orsini-green?style=for-the-badge&logo=github&labelColor=blue&color=white">
+</a>
